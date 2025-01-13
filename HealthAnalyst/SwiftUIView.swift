@@ -72,6 +72,42 @@ struct SleepDashboardView: View {
                     .padding()
                     .background(Color(UIColor.systemGray6))
                     .cornerRadius(12)
+                    
+                    // Additional Line Graph: Sleep Trend Over Time
+                    VStack(alignment: .leading) {
+                        Text("Sleep Trend Over Time")
+                            .font(.headline)
+                            .padding(.bottom, 4)
+
+                        if isLoading {
+                            ProgressView()
+                                .frame(height: 200)
+                        } else {
+                            SleepTrendLineView(sleepData: sleepData)
+                                .frame(height: 200)
+                        }
+                    }
+                    .padding()
+                    .background(Color(UIColor.systemGray6))
+                    .cornerRadius(12)
+                    
+                    // Additional Bar Graph: Sleep Stage Distribution
+                    VStack(alignment: .leading) {
+                        Text("Sleep Stage Distribution")
+                            .font(.headline)
+                            .padding(.bottom, 4)
+
+                        if isLoading {
+                            ProgressView()
+                                .frame(height: 200)
+                        } else {
+                            SleepStageDistributionView(sleepData: sleepData)
+                                .frame(height: 200)
+                        }
+                    }
+                    .padding()
+                    .background(Color(UIColor.systemGray6))
+                    .cornerRadius(12)
 
                     LazyVGrid(columns: columns, spacing: 16) {
                         StatView(
@@ -252,7 +288,7 @@ struct SleepDashboardView: View {
 
             for sample in hrSamples {
                 let hour = calendar.component(.hour, from: sample.startDate)
-                let bpm = sample.quantity.doubleValue(for: .init(from: "count/min"))
+                let bpm = sample.quantity.doubleValue(for: HKUnit.count().unitDivided(by: HKUnit.minute()))
                 if hour >= 8 && hour < 20 {
                     dayValues.append(bpm)
                 } else {
@@ -562,6 +598,114 @@ struct ChartView: View {
         default: return .gray
         }
     }
+}
+
+struct SleepTrendLineView: View {
+    let sleepData: [SleepData]
+
+    var body: some View {
+        Chart {
+            ForEach(trendData, id: \.id) { data in
+                LineMark(
+                    x: .value("Day", data.day),
+                    y: .value("Total Sleep (hrs)", data.totalSleepHours)
+                )
+                .foregroundStyle(Color.blue)
+                .symbol(Circle())
+            }
+        }
+        .chartYAxis {
+            AxisMarks(position: .leading)
+        }
+        .chartXAxis {
+            AxisMarks(values: .stride(by: .day)) {
+                AxisGridLine()
+                AxisTick()
+                AxisValueLabel()
+            }
+        }
+    }
+
+    var trendData: [SleepTrend] {
+        let calendar = Calendar.current
+        let weekDates = (0..<7).compactMap {
+            calendar.date(byAdding: .day, value: -6 + $0, to: Date())
+        }
+        return weekDates.map { date in
+            let daySleep = sleepData.filter {
+                calendar.isDate($0.date, inSameDayAs: date)
+            }
+            let totalSeconds = daySleep.reduce(0) { $0 + $1.duration }
+            let totalHours = totalSeconds / 3600
+            let dayLabel = calendar.shortWeekdaySymbols[calendar.component(.weekday, from: date) - 1]
+            return SleepTrend(day: dayLabel, totalSleepHours: totalHours)
+        }
+    }
+}
+
+struct SleepTrend: Identifiable {
+    let id = UUID()
+    let day: String
+    let totalSleepHours: Double
+}
+
+struct SleepStageDistributionView: View {
+    let sleepData: [SleepData]
+
+    var body: some View {
+        Chart {
+            ForEach(sleepStageDistribution, id: \.stage) { stage in
+                BarMark(
+                    x: .value("Sleep Stage", stage.label),
+                    y: .value("Duration (hrs)", stage.durationHours)
+                )
+                .foregroundStyle(colorForSleepStage(stage.stage))
+            }
+        }
+        .chartYAxis {
+            AxisMarks(position: .leading)
+        }
+        .chartXAxis {
+            AxisMarks(position: .bottom)
+        }
+    }
+
+    var sleepStageDistribution: [SleepStage] {
+        let stages = [0, 1, 2, 3, 4]
+        return stages.map { stage in
+            let stageData = sleepData.filter { $0.sleepStage == stage }
+            let totalSeconds = stageData.reduce(0) { $0 + $1.duration }
+            let hours = totalSeconds / 3600
+            let label: String
+            switch stage {
+            case 0: label = "In Bed"
+            case 1: label = "Awake"
+            case 2: label = "Light"
+            case 3: label = "Deep"
+            case 4: label = "REM"
+            default: label = "Unknown"
+            }
+            return SleepStage(stage: stage, label: label, durationHours: hours)
+        }
+    }
+
+    func colorForSleepStage(_ stage: Int) -> Color {
+        switch stage {
+        case 0: return .gray
+        case 1: return .yellow
+        case 2: return .green.opacity(0.3)
+        case 3: return .blue.opacity(0.6)
+        case 4: return .purple.opacity(0.7)
+        default: return .gray
+        }
+    }
+}
+
+struct SleepStage: Identifiable {
+    let id = UUID()
+    let stage: Int
+    let label: String
+    let durationHours: Double
 }
 
 struct LegendItem: View {
