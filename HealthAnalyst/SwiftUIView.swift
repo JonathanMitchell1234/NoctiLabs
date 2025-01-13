@@ -7,7 +7,6 @@ struct SleepDashboardView: View {
     @State private var sleepData: [SleepData] = []
     @State private var healthStore: HKHealthStore?
     @State private var isLoading = false
-    
     @State private var totalSleep: String = ""
     @State private var deepSleep: String = ""
     @State private var remSleep: String = ""
@@ -19,6 +18,7 @@ struct SleepDashboardView: View {
     @State private var heartRateDip: String = "N/A"
     @State private var sleepInterruptions: Int = 0
     @State private var sleepStageTransitions: Int = 0
+    @State private var hrvData: [HRVData] = []
     
     let columns = [
         GridItem(.flexible()),
@@ -39,6 +39,7 @@ struct SleepDashboardView: View {
                     .padding(.bottom, 6)
                     .onChange(of: selectedDate) {
                         fetchSleepData(for: selectedDate)
+                        fetchHRVData(for: selectedDate)
                     }
                     
                     HStack(spacing: 16) {
@@ -72,7 +73,7 @@ struct SleepDashboardView: View {
                     .cornerRadius(12)
                     
                     VStack(alignment: .leading) {
-                        Text("Sleep Trend Over Time")
+                        Text("Heart Rate Variability (HRV) During Sleep")
                             .font(.headline)
                             .padding(.bottom, 4)
                         
@@ -80,7 +81,7 @@ struct SleepDashboardView: View {
                             ProgressView()
                                 .frame(height: 200)
                         } else {
-                            SleepTrendLineView(sleepData: sleepData)
+                            HRVLineChartView(hrvData: hrvData)
                                 .frame(height: 200)
                         }
                     }
@@ -297,13 +298,15 @@ struct SleepDashboardView: View {
         healthStore = HKHealthStore()
         let sleepType = HKObjectType.categoryType(forIdentifier: .sleepAnalysis)!
         let heartRateType = HKObjectType.quantityType(forIdentifier: .heartRate)!
+        let hrvType = HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!
         
         healthStore?.requestAuthorization(
             toShare: [],
-            read: [sleepType, heartRateType]
+            read: [sleepType, heartRateType, hrvType]
         ) { success, error in
             if success {
                 fetchSleepData(for: selectedDate)
+                fetchHRVData(for: selectedDate)
             } else {
                 print("HealthKit Authorization Error: \(error?.localizedDescription ?? "Unknown Error")")
             }
@@ -352,6 +355,36 @@ struct SleepDashboardView: View {
                 self.isLoading = false
                 self.updateSleepSummary()
                 self.fetchHeartRateDip(for: date)
+            }
+        }
+        healthStore.execute(query)
+    }
+    
+    func fetchHRVData(for date: Date) {
+        guard let healthStore = healthStore else { return }
+        
+        let hrvType = HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!
+        let startOfDay = Calendar.current.startOfDay(for: date)
+        let endOfDay = Calendar.current.date(byAdding: .day, value: 1, to: startOfDay)!
+        
+        let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: endOfDay, options: .strictStartDate)
+        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)
+        
+        let query = HKSampleQuery(sampleType: hrvType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: [sortDescriptor]) { _, samples, error in
+            guard let hrvSamples = samples as? [HKQuantitySample], error == nil else {
+                print("Error fetching HRV data: \(error?.localizedDescription ?? "Unknown Error")")
+                return
+            }
+            
+            let fetchedHRVData = hrvSamples.map { sample in
+                HRVData(
+                    date: sample.startDate,
+                    value: sample.quantity.doubleValue(for: HKUnit.secondUnit(with: .milli))
+                )
+            }
+            
+            DispatchQueue.main.async {
+                self.hrvData = fetchedHRVData
             }
         }
         healthStore.execute(query)
@@ -410,24 +443,24 @@ struct SleepDashboardView: View {
     }
     
     func sleepStage(from sample: HKCategorySample) -> Int? {
-        switch sample.value {
-        case HKCategoryValueSleepAnalysis.inBed.rawValue:
-            return 0
-        case HKCategoryValueSleepAnalysis.awake.rawValue:
-            return 1
-        case HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue,
-            HKCategoryValueSleepAnalysis.asleepCore.rawValue:
-            return 2
-        case HKCategoryValueSleepAnalysis.asleepDeep.rawValue:
-            return 3
-        case HKCategoryValueSleepAnalysis.asleepREM.rawValue:
-            return 4
-        default:
-            return nil
+            switch sample.value {
+            case HKCategoryValueSleepAnalysis.inBed.rawValue:
+                return 0
+            case HKCategoryValueSleepAnalysis.awake.rawValue:
+                return 1
+            case HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue,
+                 HKCategoryValueSleepAnalysis.asleepCore.rawValue:
+                return 2
+            case HKCategoryValueSleepAnalysis.asleepDeep.rawValue:
+                return 3
+            case HKCategoryValueSleepAnalysis.asleepREM.rawValue:
+                return 4
+            default:
+                return nil
+            }
         }
-    }
-    
-    func updateSleepSummary() {
+        
+        func updateSleepSummary() {
             let asleepData = sleepData.filter { [2, 3, 4].contains($0.sleepStage) }
             let totalSleepSeconds = asleepData.reduce(0) { $0 + $1.duration }
             totalSleep = formatTimeInterval(seconds: totalSleepSeconds)
@@ -693,48 +726,42 @@ struct SleepDashboardView: View {
         }
     }
 
-    struct SleepTrendLineView: View {
-        let sleepData: [SleepData]
+    struct HRVLineChartView: View {
+        let hrvData: [HRVData]
         
         var body: some View {
             Chart {
-                ForEach(trendData, id: \.id) { data in
+                ForEach(hrvData, id: \.date) { data in
                     LineMark(
-                        x: .value("Day", data.day),
-                        y: .value("Total Sleep (hrs)", data.totalSleepHours)
+                        x: .value("Time", data.date, unit: .minute),
+                        y: .value("HRV (ms)", data.value)
                     )
-                    .foregroundStyle(Color.blue)
-                    .symbol(Circle())
+                    .foregroundStyle(Color.red)
+                    .symbol(Circle().strokeBorder(lineWidth: 2))
+                }
+            
+                RuleMark(y: .value("Average", hrvData.isEmpty ? 0 : hrvData.reduce(0) { $0 + $1.value } / Double(hrvData.count)))
+                    .foregroundStyle(Color.gray)
+                    .lineStyle(StrokeStyle(dash: [5]))
+                    .annotation(position: .trailing, alignment: .center) {
+                        Text("AVG")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                 }
             }
             .chartYAxis {
                 AxisMarks(position: .leading)
             }
             .chartXAxis {
-                AxisMarks(values: .stride(by: .day)) {
+                AxisMarks(values: .stride(by: .hour, count: 2)) { value in
                     AxisGridLine()
                     AxisTick()
-                    AxisValueLabel()
+                    AxisValueLabel(format: .dateTime.hour(.defaultDigits(amPM: .abbreviated)).minute())
                 }
-            }
-        }
-        
-        var trendData: [SleepTrend] {
-            let calendar = Calendar.current
-            let weekDates = (0..<7).compactMap {
-                calendar.date(byAdding: .day, value: -6 + $0, to: Date())
-            }
-            return weekDates.map { date in
-                let daySleep = sleepData.filter {
-                    calendar.isDate($0.date, inSameDayAs: date)
-                }
-                let totalSeconds = daySleep.reduce(0) { $0 + $1.duration }
-                let totalHours = totalSeconds / 3600
-                let dayLabel = calendar.shortWeekdaySymbols[calendar.component(.weekday, from: date) - 1]
-                return SleepTrend(day: dayLabel, totalSleepHours: totalHours)
             }
         }
     }
+        
 
     struct SleepTrend: Identifiable {
         let id = UUID()
@@ -822,6 +849,11 @@ struct SleepDashboardView: View {
         let hour: Int
         let sleepStage: Int
         let duration: TimeInterval
+    }
+
+    struct HRVData {
+        let date: Date
+        let value: Double
     }
 
     struct PopoverTextView: View {
