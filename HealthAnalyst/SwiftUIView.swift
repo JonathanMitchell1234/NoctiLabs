@@ -20,6 +20,11 @@ struct SleepDashboardView: View {
     @State private var sleepStageTransitions: Int = 0
     @State private var hrvData: [HRVData] = []
     
+    //New States
+    @State private var averageSleepingHeartRate: String = "N/A"
+    @State private var averageSleepingHRV: String = "N/A"
+    @State private var averageSleepingBloodOxygen: String = "N/A"
+    
     let columns = [
         GridItem(.flexible()),
         GridItem(.flexible())
@@ -81,7 +86,7 @@ struct SleepDashboardView: View {
                             ProgressView()
                                 .frame(height: 200)
                         } else {
-                            HRVLineChartView(hrvData: hrvData)
+                            HRVLineChartView(hrvData: hrvData, sleepData: sleepData)
                                 .frame(height: 200)
                         }
                     }
@@ -267,6 +272,13 @@ struct SleepDashboardView: View {
                         .onTapGesture {
                             transitionsPopover.toggle()
                         }
+                        
+                        // New Stat View Additions
+                        StatView(title: "Avg. Sleeping HR", value: averageSleepingHeartRate, percentage: nil, description: "Heart Rate", icon: "heart.fill")
+                        
+                        StatView(title: "Avg. Sleeping HRV", value: averageSleepingHRV, percentage: nil, description: "HRV", icon: "heart.text.square.fill")
+                        
+                        StatView(title: "Avg. Sleeping Blood O2", value: averageSleepingBloodOxygen, percentage: nil, description: "Blood Oxygen", icon: "lungs.fill")
                     }
                     .frame(maxWidth: .infinity)
                 }
@@ -299,14 +311,20 @@ struct SleepDashboardView: View {
         let sleepType = HKObjectType.categoryType(forIdentifier: .sleepAnalysis)!
         let heartRateType = HKObjectType.quantityType(forIdentifier: .heartRate)!
         let hrvType = HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!
+        let bloodOxygenType = HKObjectType.quantityType(forIdentifier: .oxygenSaturation)!
         
         healthStore?.requestAuthorization(
             toShare: [],
-            read: [sleepType, heartRateType, hrvType]
+            read: [sleepType, heartRateType, hrvType, bloodOxygenType]
         ) { success, error in
             if success {
                 fetchSleepData(for: selectedDate)
                 fetchHRVData(for: selectedDate)
+                
+                // Call new functions here
+                fetchAverageSleepingHeartRate(for: selectedDate)
+                fetchAverageSleepingHRV(for: selectedDate)
+                fetchAverageSleepingBloodOxygen(for: selectedDate)
             } else {
                 print("HealthKit Authorization Error: \(error?.localizedDescription ?? "Unknown Error")")
             }
@@ -315,33 +333,61 @@ struct SleepDashboardView: View {
     
     func fetchSleepData(for date: Date) {
         isLoading = true
+        print("Fetching sleep data for date: \(date)")
+
         guard let healthStore = healthStore else {
             isLoading = false
+            print("HealthKit not initialized.")
             return
         }
-        
+
         let sleepType = HKObjectType.categoryType(forIdentifier: .sleepAnalysis)!
         let startOfDay = Calendar.current.startOfDay(for: date)
         let endOfDay = Calendar.current.date(byAdding: .day, value: 1, to: startOfDay)!
         let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: endOfDay, options: .strictStartDate)
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)
-        
+
         let query = HKSampleQuery(
             sampleType: sleepType,
             predicate: predicate,
             limit: HKObjectQueryNoLimit,
             sortDescriptors: [sortDescriptor]
         ) { _, samples, error in
-            guard let samples = samples as? [HKCategorySample], error == nil else {
-                print("Error fetching sleep data: \(error?.localizedDescription ?? "Unknown Error")")
+            if let error = error {
+                print("Error fetching sleep data: \(error.localizedDescription)")
                 DispatchQueue.main.async {
                     self.isLoading = false
                 }
                 return
             }
-            
+
+            guard let samples = samples as? [HKCategorySample], !samples.isEmpty else {
+                print("No sleep data found for the specified date.")
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    // Check if the selected date is today
+                    if Calendar.current.isDateInToday(date) {
+                        // If it's today and no data, fetch yesterday's data
+                        let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: date)!
+                        print("Fetching sleep data for yesterday: \(yesterday)")
+                        self.fetchSleepData(for: yesterday) // Recursive call for yesterday
+                    } else {
+                        // If it's not today, just update UI with empty data
+                        self.sleepData = []
+                        self.updateSleepSummary()
+                    }
+                }
+                return
+            }
+
+            print("Found \(samples.count) sleep samples.")
+
             let fetchedSleepData = samples.compactMap { sample -> SleepData? in
-                guard let sleepStage = self.sleepStage(from: sample) else { return nil }
+                guard let sleepStage = self.sleepStage(from: sample) else {
+                    print("Could not determine sleep stage for sample: \(sample)")
+                    return nil
+                }
+                print("Sleep sample: \(sample), sleepStage: \(sleepStage)")
                 return SleepData(
                     date: sample.startDate,
                     hour: Calendar.current.component(.hour, from: sample.startDate),
@@ -349,12 +395,16 @@ struct SleepDashboardView: View {
                     duration: sample.endDate.timeIntervalSince(sample.startDate)
                 )
             }
-            
+
             DispatchQueue.main.async {
                 self.sleepData = fetchedSleepData
+                print("Fetched sleep data: \(self.sleepData)")
                 self.isLoading = false
                 self.updateSleepSummary()
                 self.fetchHeartRateDip(for: date)
+                self.fetchAverageSleepingHeartRate(for: date)
+                self.fetchAverageSleepingHRV(for: date)
+                self.fetchAverageSleepingBloodOxygen(for: date)
             }
         }
         healthStore.execute(query)
@@ -391,250 +441,416 @@ struct SleepDashboardView: View {
     }
     
     func fetchHeartRateDip(for date: Date) {
-        guard let healthStore = healthStore else {
-            heartRateDip = "N/A"
-            return
-        }
-        
-        let heartRateType = HKObjectType.quantityType(forIdentifier: .heartRate)!
-        let startOfDay = Calendar.current.startOfDay(for: date)
-        let endOfDay = Calendar.current.date(byAdding: .day, value: 1, to: startOfDay)!
-        
-        let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: endOfDay, options: .strictStartDate)
-        let query = HKSampleQuery(sampleType: heartRateType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil) {
-            _, samples, _ in
-            guard let hrSamples = samples as? [HKQuantitySample], !hrSamples.isEmpty else {
-                DispatchQueue.main.async {
-                    self.heartRateDip = "N/A"
-                }
-                return
-            }
-            
-            var dayValues: [Double] = []
-            var nightValues: [Double] = []
-            let calendar = Calendar.current
-            
-            for sample in hrSamples {
-                let hour = calendar.component(.hour, from: sample.startDate)
-                let bpm = sample.quantity.doubleValue(for: HKUnit.count().unitDivided(by: HKUnit.minute()))
-                if hour >= 8 && hour < 20 {
-                    dayValues.append(bpm)
-                } else {
-                    nightValues.append(bpm)
-                }
-            }
-            
-            let avgDayHR = dayValues.isEmpty ? 0 : dayValues.reduce(0, +) / Double(dayValues.count)
-            let avgNightHR = nightValues.isEmpty ? 0 : nightValues.reduce(0, +) / Double(nightValues.count)
-            
-            if avgDayHR == 0 || avgNightHR == 0 {
-                DispatchQueue.main.async {
-                    self.heartRateDip = "N/A"
-                }
-                return
-            }
-            
-            let dip = max(0, (avgDayHR - avgNightHR) / avgDayHR * 100)
-            DispatchQueue.main.async {
-                self.heartRateDip = String(format: "%.0f%%", dip)
-            }
-        }
-        healthStore.execute(query)
-    }
-    
-    func sleepStage(from sample: HKCategorySample) -> Int? {
-            switch sample.value {
-            case HKCategoryValueSleepAnalysis.inBed.rawValue:
-                return 0
-            case HKCategoryValueSleepAnalysis.awake.rawValue:
-                return 1
-            case HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue,
-                 HKCategoryValueSleepAnalysis.asleepCore.rawValue:
-                return 2
-            case HKCategoryValueSleepAnalysis.asleepDeep.rawValue:
-                return 3
-            case HKCategoryValueSleepAnalysis.asleepREM.rawValue:
-                return 4
-            default:
-                return nil
-            }
-        }
-        
-        func updateSleepSummary() {
-            let asleepData = sleepData.filter { [2, 3, 4].contains($0.sleepStage) }
-            let totalSleepSeconds = asleepData.reduce(0) { $0 + $1.duration }
-            totalSleep = formatTimeInterval(seconds: totalSleepSeconds)
-            
-            deepSleep = formatTimeInterval(
-                seconds: sleepData.filter { $0.sleepStage == 3 }.reduce(0) { $0 + $1.duration }
-            )
-            remSleep = formatTimeInterval(
-                seconds: sleepData.filter { $0.sleepStage == 4 }.reduce(0) { $0 + $1.duration }
-            )
-            lightSleep = formatTimeInterval(
-                seconds: sleepData.filter { $0.sleepStage == 2 }.reduce(0) { $0 + $1.duration }
-            )
-            
-            let inBedOrAsleep = sleepData.filter { [0, 2, 3, 4].contains($0.sleepStage) }
-            if inBedOrAsleep.isEmpty {
-                timeInBed = "N/A"
-                sleepEfficiency = "N/A"
-                averageSleepOnset = "N/A"
-            } else {
-                let earliestStart = inBedOrAsleep.map { $0.date }.min()!
-                let latestEnd = inBedOrAsleep.map { $0.date.addingTimeInterval($0.duration) }.max()!
-                let totalInBedSeconds = latestEnd.timeIntervalSince(earliestStart)
-                timeInBed = formatTimeInterval(seconds: totalInBedSeconds)
-                
-                if totalInBedSeconds > 0 {
-                    let efficiencyPercentage = (totalSleepSeconds / totalInBedSeconds) * 100
-                    sleepEfficiency = String(format: "%.1f%%", efficiencyPercentage)
-                } else {
-                    sleepEfficiency = "N/A"
-                }
-                
-                if let firstSleepEntry = asleepData.min(by: { $0.date < $1.date }) {
-                    let calendar = Calendar.current
-                    let hour = calendar.component(.hour, from: firstSleepEntry.date)
-                    let minute = calendar.component(.minute, from: firstSleepEntry.date)
-                    averageSleepOnset = String(format: "%02d:%02d", hour, minute)
-                } else {
-                    averageSleepOnset = "N/A"
-                }
-            }
-            
-            let sortedSleepData = sleepData.sorted { $0.date < $1.date }
-            var interruptionsCount = 0
-            for i in 1..<sortedSleepData.count {
-                let prev = sortedSleepData[i-1]
-                let current = sortedSleepData[i]
-                if [2, 3, 4].contains(prev.sleepStage) && current.sleepStage == 1 {
-                    interruptionsCount += 1
-                }
-            }
-            sleepInterruptions = interruptionsCount
-            
-            var transitionsCount = 0
-            for i in 1..<sortedSleepData.count {
-                if sortedSleepData[i].sleepStage != sortedSleepData[i-1].sleepStage {
-                    transitionsCount += 1
-                }
-            }
-            sleepStageTransitions = transitionsCount
-            
-            calculateSleepConsistency(for: selectedDate)
-        }
-        
-        func calculateSleepConsistency(for currentDate: Date) {
             guard let healthStore = healthStore else {
-                sleepConsistency = "N/A"
+                heartRateDip = "N/A"
                 return
             }
-            let calendar = Calendar.current
-            let endDate = calendar.date(byAdding: .day, value: 1, to: currentDate)!
-            let startDate = calendar.date(byAdding: .day, value: -7, to: currentDate)!
-            let sleepType = HKObjectType.categoryType(forIdentifier: .sleepAnalysis)!
-            let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: .strictStartDate)
-            let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)
             
-            let query = HKSampleQuery(
-                sampleType: sleepType,
-                predicate: predicate,
-                limit: HKObjectQueryNoLimit,
-                sortDescriptors: [sortDescriptor]
-            ) { _, samples, error in
-                guard let samples = samples as? [HKCategorySample], error == nil else {
+            let heartRateType = HKObjectType.quantityType(forIdentifier: .heartRate)!
+            let startOfDay = Calendar.current.startOfDay(for: date)
+            let endOfDay = Calendar.current.date(byAdding: .day, value: 1, to: startOfDay)!
+            
+            let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: endOfDay, options: .strictStartDate)
+            let query = HKSampleQuery(sampleType: heartRateType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil) {
+                _, samples, _ in
+                guard let hrSamples = samples as? [HKQuantitySample], !hrSamples.isEmpty else {
                     DispatchQueue.main.async {
-                        self.sleepConsistency = "N/A"
+                        self.heartRateDip = "N/A"
                     }
                     return
                 }
-                let sleepByDay = Dictionary(grouping: samples) {
-                    calendar.startOfDay(for: $0.startDate)
-                }
-                var onsetTimes: [Date] = []
-                for (_, dailySamples) in sleepByDay {
-                    if let firstSleep = dailySamples
-                        .sorted(by: { $0.startDate < $1.startDate })
-                        .first(where: { [2, 3, 4].contains(self.sleepStage(from: $0) ?? -1) }) {
-                        onsetTimes.append(firstSleep.startDate)
+                
+                var dayValues: [Double] = []
+                var nightValues: [Double] = []
+                let calendar = Calendar.current
+                
+                for sample in hrSamples {
+                    let hour = calendar.component(.hour, from: sample.startDate)
+                    let bpm = sample.quantity.doubleValue(for: HKUnit.count().unitDivided(by: HKUnit.minute()))
+                    if hour >= 8 && hour < 20 {
+                        dayValues.append(bpm)
+                    } else {
+                        nightValues.append(bpm)
                     }
                 }
-                if onsetTimes.count < 2 {
+                
+                let avgDayHR = dayValues.isEmpty ? 0 : dayValues.reduce(0, +) / Double(dayValues.count)
+                let avgNightHR = nightValues.isEmpty ? 0 : nightValues.reduce(0, +) / Double(nightValues.count)
+                
+                if avgDayHR == 0 || avgNightHR == 0 {
                     DispatchQueue.main.async {
-                        self.sleepConsistency = "N/A"
+                        self.heartRateDip = "N/A"
                     }
                     return
                 }
-                var totalVariance: TimeInterval = 0
-                let referenceTime = onsetTimes.first!
-                for onsetTime in onsetTimes.dropFirst() {
-                    let diff = abs(calendar.dateComponents([.minute], from: referenceTime, to: onsetTime).minute ?? 0)
-                    totalVariance += Double(min(diff, 1440 - diff))
-                }
-                let averageVariance = totalVariance / Double(onsetTimes.count - 1)
-                let consistencyScore = max(0, 100 - (averageVariance / 30 * 100))
+                
+                let dip = max(0, (avgDayHR - avgNightHR) / avgDayHR * 100)
                 DispatchQueue.main.async {
-                    self.sleepConsistency = String(format: "%.0f%%", min(100, consistencyScore))
+                    self.heartRateDip = String(format: "%.0f%%", dip)
                 }
             }
             healthStore.execute(query)
         }
         
-        func calculateSleepStagePercentage(stage: Int) -> String {
-            let totalSleepSeconds = sleepData.filter { [2, 3, 4].contains($0.sleepStage) }.reduce(0) { $0 + $1.duration }
-            let stageSeconds = sleepData.filter { $0.sleepStage == stage }.reduce(0) { $0 + $1.duration }
-            guard totalSleepSeconds > 0 else { return "0%" }
-            let percentage = (stageSeconds / totalSleepSeconds) * 100
-            return String(format: "%.0f%%", percentage)
-        }
-        
-        func calculateTotalSleepPercentage() -> CGFloat {
-            let totalSleepSeconds = sleepData.filter { [2, 3, 4].contains($0.sleepStage) }.reduce(0) { $0 + $1.duration }
-            let targetSleepSeconds: Double = 28800
-            guard totalSleepSeconds > 0 else { return 0 }
-            let percentage = min(CGFloat(totalSleepSeconds / targetSleepSeconds), 1.0)
-            return percentage
-        }
-        
-        func formatTimeInterval(seconds: TimeInterval) -> String {
-            let hours = Int(seconds) / 3600
-            let minutes = Int(seconds) % 3600 / 60
-            return String(format: "%dh %02dm", hours, minutes)
-        }
-    }
+        // New Functions for fetching data
+    func fetchAverageSleepingHeartRate(for date: Date) {
+         print("Fetching average sleeping heart rate...")
+         guard let healthStore = healthStore else {
+             print("HealthKit not initialized.")
+             averageSleepingHeartRate = "N/A - HealthKit Error"
+             return
+         }
+     
+         // Use the sleep data to determine the sleep period
+         guard let sleepStart = sleepData.filter({$0.sleepStage != 1}).map({$0.date}).min(),
+               let sleepEnd = sleepData.filter({$0.sleepStage != 1}).map({$0.date.addingTimeInterval($0.duration)}).max() else {
+             print("Could not determine sleep period from sleep data.")
+             DispatchQueue.main.async {
+                 self.averageSleepingHeartRate = "N/A - No Sleep Data"
+             }
+             return
+         }
+         
+         print("Sleep period determined: \(sleepStart) to \(sleepEnd)")
 
-    struct CircularProgressView: View {
-        let percentage: CGFloat
-        let title: String
-        let value: String
+         let heartRateType = HKObjectType.quantityType(forIdentifier: .heartRate)!
+         let predicate = HKQuery.predicateForSamples(withStart: sleepStart, end: sleepEnd, options: .strictStartDate)
+         let query = HKSampleQuery(sampleType: heartRateType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { _, samples, error in
+             if let error = error {
+                 print("Error fetching heart rate samples: \(error.localizedDescription)")
+                 DispatchQueue.main.async {
+                     self.averageSleepingHeartRate = "N/A - Query Error"
+                 }
+                 return
+             }
+
+             guard let hrSamples = samples as? [HKQuantitySample], !hrSamples.isEmpty else {
+                 print("No heart rate samples found for the sleep period.")
+                 DispatchQueue.main.async {
+                     self.averageSleepingHeartRate = "N/A - No HR Data"
+                 }
+                 return
+             }
+
+             print("Found \(hrSamples.count) heart rate samples.")
+
+             let heartRates = hrSamples.map { $0.quantity.doubleValue(for: HKUnit.count().unitDivided(by: HKUnit.minute())) }
+             let averageHeartRate = heartRates.reduce(0.0, +) / Double(heartRates.count)
+
+             DispatchQueue.main.async {
+                 self.averageSleepingHeartRate = String(format: "%.0f bpm", averageHeartRate)
+                 print("Average sleeping heart rate: \(self.averageSleepingHeartRate)")
+             }
+         }
+
+         healthStore.execute(query)
+     }
+
+     func fetchAverageSleepingHRV(for date: Date) {
+         print("Fetching average sleeping HRV...")
+         guard let healthStore = healthStore else {
+             print("HealthKit not initialized.")
+             averageSleepingHRV = "N/A - HealthKit Error"
+             return
+         }
+
+         // Determine the sleep period
+         guard let sleepStart = sleepData.filter({$0.sleepStage != 1}).map({$0.date}).min(),
+               let sleepEnd = sleepData.filter({$0.sleepStage != 1}).map({$0.date.addingTimeInterval($0.duration)}).max() else {
+             print("Could not determine sleep period from sleep data.")
+             DispatchQueue.main.async {
+                 self.averageSleepingHRV = "N/A - No Sleep Data"
+             }
+             return
+         }
+         
+         print("Sleep period determined: \(sleepStart) to \(sleepEnd)")
+
+         let hrvType = HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!
+         let predicate = HKQuery.predicateForSamples(withStart: sleepStart, end: sleepEnd, options: .strictStartDate)
+         let query = HKSampleQuery(sampleType: hrvType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { _, samples, error in
+             if let error = error {
+                 print("Error fetching HRV samples: \(error.localizedDescription)")
+                 DispatchQueue.main.async {
+                     self.averageSleepingHRV = "N/A - Query Error"
+                 }
+                 return
+             }
+
+             guard let hrvSamples = samples as? [HKQuantitySample], !hrvSamples.isEmpty else {
+                 print("No HRV samples found for the sleep period.")
+                 DispatchQueue.main.async {
+                     self.averageSleepingHRV = "N/A - No HRV Data"
+                 }
+                 return
+             }
+
+             print("Found \(hrvSamples.count) HRV samples.")
+
+             let hrvValues = hrvSamples.map { $0.quantity.doubleValue(for: HKUnit.secondUnit(with: .milli)) }
+             let averageHRV = hrvValues.reduce(0.0, +) / Double(hrvValues.count)
+
+             DispatchQueue.main.async {
+                 self.averageSleepingHRV = String(format: "%.0f ms", averageHRV)
+                 print("Average sleeping HRV: \(self.averageSleepingHRV)")
+             }
+         }
+
+         healthStore.execute(query)
+     }
+
+     func fetchAverageSleepingBloodOxygen(for date: Date) {
+         print("Fetching average sleeping blood oxygen...")
+         guard let healthStore = healthStore else {
+             print("HealthKit not initialized.")
+             averageSleepingBloodOxygen = "N/A - HealthKit Error"
+             return
+         }
+         
+         // Determine the sleep period
+         guard let sleepStart = sleepData.filter({$0.sleepStage != 1}).map({$0.date}).min(),
+               let sleepEnd = sleepData.filter({$0.sleepStage != 1}).map({$0.date.addingTimeInterval($0.duration)}).max() else {
+             print("Could not determine sleep period from sleep data.")
+             DispatchQueue.main.async {
+                 self.averageSleepingBloodOxygen = "N/A - No Sleep Data"
+             }
+             return
+         }
+
+         print("Sleep period determined: \(sleepStart) to \(sleepEnd)")
+
+         let oxygenSaturationType = HKObjectType.quantityType(forIdentifier: .oxygenSaturation)!
+         let predicate = HKQuery.predicateForSamples(withStart: sleepStart, end: sleepEnd, options: .strictStartDate)
+         let query = HKSampleQuery(sampleType: oxygenSaturationType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { _, samples, error in
+             if let error = error {
+                 print("Error fetching blood oxygen samples: \(error.localizedDescription)")
+                 DispatchQueue.main.async {
+                     self.averageSleepingBloodOxygen = "N/A - Query Error"
+                 }
+                 return
+             }
+
+             guard let oxygenSamples = samples as? [HKQuantitySample], !oxygenSamples.isEmpty else {
+                 print("No blood oxygen samples found for the sleep period.")
+                 DispatchQueue.main.async {
+                     self.averageSleepingBloodOxygen = "N/A - No O2 Data"
+                 }
+                 return
+             }
+
+             print("Found \(oxygenSamples.count) blood oxygen samples.")
+
+             let oxygenValues = oxygenSamples.map { $0.quantity.doubleValue(for: HKUnit.percent()) }
+             let averageOxygen = oxygenValues.reduce(0.0, +) / Double(oxygenValues.count)
+
+             DispatchQueue.main.async {
+                 self.averageSleepingBloodOxygen = String(format: "%.1f%%", averageOxygen * 100)
+                 print("Average sleeping blood oxygen: \(self.averageSleepingBloodOxygen)")
+             }
+         }
+
+         healthStore.execute(query)
+     }
+
+     func sleepStage(from sample: HKCategorySample) -> Int? {
+         switch sample.value {
+         case HKCategoryValueSleepAnalysis.inBed.rawValue:
+             return 0
+         case HKCategoryValueSleepAnalysis.awake.rawValue:
+             return 1
+         case HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue,
+              HKCategoryValueSleepAnalysis.asleepCore.rawValue:
+             return 2
+         case HKCategoryValueSleepAnalysis.asleepDeep.rawValue:
+             return 3
+         case HKCategoryValueSleepAnalysis.asleepREM.rawValue:
+             return 4
+         default:
+             return nil
+         }
+     }
+     
+    func updateSleepSummary() {
+        let asleepData = sleepData.filter { [2, 3, 4].contains($0.sleepStage) }
+        let totalSleepSeconds = asleepData.reduce(0) { $0 + $1.duration }
+        totalSleep = formatTimeInterval(seconds: totalSleepSeconds)
         
-        var body: some View {
-            VStack {
-                ZStack {
-                    Circle()
-                        .stroke(Color.gray.opacity(0.3), lineWidth: 10)
-                    Circle()
-                        .trim(from: 0, to: percentage)
-                        .stroke(Color.green, lineWidth: 10)
-                        .rotationEffect(.degrees(-90))
-                    Text("\(Int(percentage * 100))%")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                }
-                .frame(width: 100, height: 100)
-                Text(title)
-                    .font(.caption)
-                    .multilineTextAlignment(.center)
-                    .foregroundColor(.white)
-                Text(value)
-                    .font(.caption)
-                    .foregroundColor(.gray)
+        deepSleep = formatTimeInterval(
+            seconds: sleepData.filter { $0.sleepStage == 3 }.reduce(0) { $0 + $1.duration }
+        )
+        remSleep = formatTimeInterval(
+            seconds: sleepData.filter { $0.sleepStage == 4 }.reduce(0) { $0 + $1.duration }
+        )
+        lightSleep = formatTimeInterval(
+            seconds: sleepData.filter { $0.sleepStage == 2 }.reduce(0) { $0 + $1.duration }
+        )
+        
+        let inBedOrAsleep = sleepData.filter { [0, 2, 3, 4].contains($0.sleepStage) }
+        if inBedOrAsleep.isEmpty {
+            timeInBed = "N/A"
+            sleepEfficiency = "N/A"
+            averageSleepOnset = "N/A"
+        } else {
+            let earliestStart = inBedOrAsleep.map { $0.date }.min()!
+            let latestEnd = inBedOrAsleep.map { $0.date.addingTimeInterval($0.duration) }.max()!
+            let totalInBedSeconds = latestEnd.timeIntervalSince(earliestStart)
+            timeInBed = formatTimeInterval(seconds: totalInBedSeconds)
+            
+            if totalInBedSeconds > 0 {
+                let efficiencyPercentage = (totalSleepSeconds / totalInBedSeconds) * 100
+                sleepEfficiency = String(format: "%.1f%%", efficiencyPercentage)
+            } else {
+                sleepEfficiency = "N/A"
+            }
+            
+            if let firstSleepEntry = asleepData.min(by: { $0.date < $1.date }) {
+                let calendar = Calendar.current
+                let hour = calendar.component(.hour, from: firstSleepEntry.date)
+                let minute = calendar.component(.minute, from: firstSleepEntry.date)
+                averageSleepOnset = String(format: "%02d:%02d", hour, minute)
+            } else {
+                averageSleepOnset = "N/A"
             }
         }
-    }
+        
+        let sortedSleepData = sleepData.sorted { $0.date < $1.date }
+            var interruptionsCount = 0
 
-    struct StatView: View {
+            if sortedSleepData.count >= 2 {
+                for i in 1..<sortedSleepData.count {
+                    let prev = sortedSleepData[i-1]
+                    let current = sortedSleepData[i]
+                    if [2, 3, 4].contains(prev.sleepStage) && current.sleepStage == 1 {
+                        interruptionsCount += 1
+                    }
+                }
+            }
+
+            sleepInterruptions = interruptionsCount
+
+            var transitionsCount = 0
+            if sortedSleepData.count >= 2 { // Add the check here as well!
+                for i in 1..<sortedSleepData.count {
+                    if sortedSleepData[i].sleepStage != sortedSleepData[i-1].sleepStage {
+                        transitionsCount += 1
+                    }
+                }
+            }
+            sleepStageTransitions = transitionsCount
+
+            calculateSleepConsistency(for: selectedDate)
+        }
+     
+     func calculateSleepConsistency(for currentDate: Date) {
+         guard let healthStore = healthStore else {
+             sleepConsistency = "N/A"
+             return
+         }
+         let calendar = Calendar.current
+         let endDate = calendar.date(byAdding: .day, value: 1, to: currentDate)!
+         let startDate = calendar.date(byAdding: .day, value: -7, to: currentDate)!
+         let sleepType = HKObjectType.categoryType(forIdentifier: .sleepAnalysis)!
+         let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: .strictStartDate)
+         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)
+         
+         let query = HKSampleQuery(
+             sampleType: sleepType,
+             predicate: predicate,
+             limit: HKObjectQueryNoLimit,
+             sortDescriptors: [sortDescriptor]
+         ) { _, samples, error in
+             guard let samples = samples as? [HKCategorySample], error == nil else {
+                 DispatchQueue.main.async {
+                     self.sleepConsistency = "N/A"
+                 }
+                 return
+             }
+             let sleepByDay = Dictionary(grouping: samples) {
+                 calendar.startOfDay(for: $0.startDate)
+             }
+             var onsetTimes: [Date] = []
+             for (_, dailySamples) in sleepByDay {
+                 if let firstSleep = dailySamples
+                     .sorted(by: { $0.startDate < $1.startDate })
+                     .first(where: { [2, 3, 4].contains(self.sleepStage(from: $0) ?? -1) }) {
+                     onsetTimes.append(firstSleep.startDate)
+                 }
+             }
+             if onsetTimes.count < 2 {
+                 DispatchQueue.main.async {
+                     self.sleepConsistency = "N/A"
+                 }
+                 return
+             }
+             var totalVariance: TimeInterval = 0
+             let referenceTime = onsetTimes.first!
+             for onsetTime in onsetTimes.dropFirst() {
+                 let diff = abs(calendar.dateComponents([.minute], from: referenceTime, to: onsetTime).minute ?? 0)
+                 totalVariance += Double(min(diff, 1440 - diff))
+             }
+             let averageVariance = totalVariance / Double(onsetTimes.count - 1)
+             let consistencyScore = max(0, 100 - (averageVariance / 30 * 100))
+             DispatchQueue.main.async {
+                 self.sleepConsistency = String(format: "%.0f%%", min(100, consistencyScore))
+             }
+         }
+         healthStore.execute(query)
+     }
+     
+     func calculateSleepStagePercentage(stage: Int) -> String {
+         let totalSleepSeconds = sleepData.filter { [2, 3, 4].contains($0.sleepStage) }.reduce(0) { $0 + $1.duration }
+         let stageSeconds = sleepData.filter { $0.sleepStage == stage }.reduce(0) { $0 + $1.duration }
+         guard totalSleepSeconds > 0 else { return "0%" }
+         let percentage = (stageSeconds / totalSleepSeconds) * 100
+         return String(format: "%.0f%%", percentage)
+     }
+     
+     func calculateTotalSleepPercentage() -> CGFloat {
+         let totalSleepSeconds = sleepData.filter { [2, 3, 4].contains($0.sleepStage) }.reduce(0) { $0 + $1.duration }
+         let targetSleepSeconds: Double = 28800
+         guard totalSleepSeconds > 0 else { return 0 }
+         let percentage = min(CGFloat(totalSleepSeconds / targetSleepSeconds), 1.0)
+         return percentage
+     }
+     
+     func formatTimeInterval(seconds: TimeInterval) -> String {
+         let hours = Int(seconds) / 3600
+         let minutes = Int(seconds) % 3600 / 60
+         return String(format: "%dh %02dm", hours, minutes)
+     }
+ }
+
+ struct CircularProgressView: View {
+     let percentage: CGFloat
+     let title: String
+     let value: String
+     
+     var body: some View {
+         VStack {
+             ZStack {
+                 Circle()
+                     .stroke(Color.gray.opacity(0.3), lineWidth: 10)
+                 Circle()
+                     .trim(from: 0, to: percentage)
+                     .stroke(Color.green, lineWidth: 10)
+                     .rotationEffect(.degrees(-90))
+                 Text("\(Int(percentage * 100))%")
+                     .font(.headline)
+                     .foregroundColor(.white)
+             }
+             .frame(width: 100, height: 100)
+             Text(title)
+                 .font(.caption)
+                 .multilineTextAlignment(.center)
+                 .foregroundColor(.white)
+             Text(value)
+                 .font(.caption)
+                 .foregroundColor(.gray)
+         }
+     }
+ }
+
+struct StatView: View {
         let title: String
         let value: String
         let percentage: String?
@@ -728,10 +944,11 @@ struct SleepDashboardView: View {
 
     struct HRVLineChartView: View {
         let hrvData: [HRVData]
-        
+        let sleepData: [SleepData]
+
         var body: some View {
             Chart {
-                ForEach(hrvData, id: \.date) { data in
+                ForEach(filteredHRVData, id: \.date) { data in
                     LineMark(
                         x: .value("Time", data.date, unit: .minute),
                         y: .value("HRV (ms)", data.value)
@@ -739,8 +956,8 @@ struct SleepDashboardView: View {
                     .foregroundStyle(Color.red)
                     .symbol(Circle().strokeBorder(lineWidth: 2))
                 }
-            
-                RuleMark(y: .value("Average", hrvData.isEmpty ? 0 : hrvData.reduce(0) { $0 + $1.value } / Double(hrvData.count)))
+
+                RuleMark(y: .value("Average", filteredHRVData.isEmpty ? 0 : filteredHRVData.reduce(0) { $0 + $1.value } / Double(filteredHRVData.count)))
                     .foregroundStyle(Color.gray)
                     .lineStyle(StrokeStyle(dash: [5]))
                     .annotation(position: .trailing, alignment: .center) {
@@ -753,15 +970,57 @@ struct SleepDashboardView: View {
                 AxisMarks(position: .leading)
             }
             .chartXAxis {
-                AxisMarks(values: .stride(by: .hour, count: 2)) { value in
+                AxisMarks(values: .stride(by: .hour, count: 1)) { value in
                     AxisGridLine()
                     AxisTick()
                     AxisValueLabel(format: .dateTime.hour(.defaultDigits(amPM: .abbreviated)).minute())
                 }
             }
+            .chartXScale(domain: xDomain)
+        }
+
+        // Filter HRV data based on sleep time
+        private var filteredHRVData: [HRVData] {
+            guard let sleepStart = sleepStartTime, let sleepEnd = sleepEndTime else {
+                return []
+            }
+
+            return hrvData.filter { data in
+                data.date >= sleepStart && data.date <= sleepEnd
+            }
+        }
+
+        // Calculate the domain for the x-axis based on sleep times
+        private var xDomain: ClosedRange<Date> {
+            guard let sleepStart = sleepStartTime, let sleepEnd = sleepEndTime else {
+                return Date()...Date()
+            }
+            return sleepStart...sleepEnd
+        }
+
+        // Correctly determine sleep start time
+        private var sleepStartTime: Date? {
+            sleepData.filter { $0.sleepStage != 1 } // Filter out "awake" periods
+                     .map { $0.date }               // Extract the start dates
+                     .min()                         // Get the earliest start date
+        }
+
+        // Correctly determine sleep end time
+        private var sleepEndTime: Date? {
+            guard let sleepStart = sleepStartTime else { return nil }
+
+            // Find the last sleep segment that isn't "awake"
+            guard let lastSleepSegment = sleepData.filter({ $0.sleepStage != 1 }).max(by: { $0.date < $1.date }) else { return nil }
+
+            let sleepEnd = sleepData
+                .filter { $0.sleepStage != 1 && $0.date >= sleepStart } // Consider only sleep segments after sleepStart
+                .map { $0.date.addingTimeInterval($0.duration) } // Calculate end time of each segment
+                .max() // Get the latest end time
+
+            // Return the end time of the last sleep segment, or the end of the last segment if somehow that is missing
+            return sleepEnd ?? lastSleepSegment.date.addingTimeInterval(lastSleepSegment.duration)
         }
     }
-        
 
     struct SleepTrend: Identifiable {
         let id = UUID()
