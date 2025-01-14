@@ -20,11 +20,14 @@ struct SleepDashboardView: View {
     @State private var sleepStageTransitions: Int = 0
     @State private var hrvData: [HRVData] = []
     
-    //New States
+    // New States
     @State private var averageSleepingHeartRate: String = "N/A"
     @State private var averageSleepingHRV: String = "N/A"
     @State private var averageSleepingBloodOxygen: String = "N/A"
     @State private var averageRespiratoryRate: String = "N/A"
+    
+    // New State for Sleep Quality Score
+    @State private var sleepQualityScore: Int?
     
     let columns = [
         GridItem(.flexible()),
@@ -54,6 +57,24 @@ struct SleepDashboardView: View {
                             title: "Total Sleep Time",
                             value: totalSleep
                         )
+                        
+                        // Sleep Quality Gauge
+                        if let score = sleepQualityScore {
+                            CircularProgressView(
+                                percentage: CGFloat(score) / 100.0,
+                                title: "Sleep Quality",
+                                value: "\(score)"
+                            )
+                            .accentColor(.green) // Or any color you prefer for the gauge
+                        } else {
+                            CircularProgressView(
+                                percentage: 0,
+                                title: "Sleep Quality",
+                                value: "N/A"
+                            )
+                            .accentColor(.gray)
+                        }
+                        
                         CircularProgressView(
                             percentage: 0.47,
                             title: "3-Day Sleep Target",
@@ -61,6 +82,7 @@ struct SleepDashboardView: View {
                         )
                     }
                     
+                    // ... rest of your SleepDashboardView code ...
                     VStack(alignment: .leading) {
                         Text("Sleep Pattern")
                             .font(.headline)
@@ -113,221 +135,222 @@ struct SleepDashboardView: View {
                     .cornerRadius(12)
                     
                     LazyVGrid(columns: columns, spacing: 16) {
-                         StatView(
-                             title: "Deep Sleep",
-                             value: deepSleep,
-                             percentage: calculateSleepStagePercentage(stage: 3),
-                             description: nil,
-                             icon: "moon.zzz.fill"
-                         )
-                         .popover(isPresented: Binding<Bool>(
-                             get: { deepSleepPopover },
-                             set: { deepSleepPopover = $0 }
-                         )) {
-                             PopoverTextView(title: "Deep Sleep", content: "Deep sleep, also known as slow-wave sleep (SWS), is crucial for physical restoration, muscle repair, and growth hormone release. During this stage, brain waves are at their slowest, and it's difficult to awaken someone. Deep sleep also plays a role in consolidating declarative memories (facts and events).")
-                         }
-                         .onTapGesture {
-                             deepSleepPopover.toggle()
-                         }
-                         
-                         StatView(
-                             title: "REM Sleep",
-                             value: remSleep,
-                             percentage: calculateSleepStagePercentage(stage: 4),
-                             description: nil,
-                             icon: "moon.stars.fill"
-                         )
-                         .popover(isPresented: Binding<Bool>(
-                             get: { remSleepPopover },
-                             set: { remSleepPopover = $0 }
-                         )) {
-                             PopoverTextView(title: "REM Sleep", content: "REM sleep is important for cognitive functions, memory consolidation, and emotional regulation. Characterized by rapid eye movements and brain activity similar to wakefulness, it's the stage where most vivid dreams occur. REM sleep helps process emotions, enhances creativity, and contributes to learning.")
-                         }
-                         .onTapGesture {
-                             remSleepPopover.toggle()
-                         }
-                         
-                         StatView(
-                             title: "Light Sleep",
-                             value: lightSleep,
-                             percentage: calculateSleepStagePercentage(stage: 2),
-                             description: nil,
-                             icon: "moon.fill"
-                         )
-                         .popover(isPresented: Binding<Bool>(
-                             get: { lightSleepPopover },
-                             set: { lightSleepPopover = $0 }
-                         )) {
-                             PopoverTextView(title: "Light Sleep", content: "Light sleep serves as a transition between wakefulness and deeper sleep stages, contributing to overall sleep architecture. It is the most common sleep stage, making up about 50-60% of total sleep time. During light sleep, muscle activity decreases, and eye movements stop, preparing the body for deeper sleep stages.")
-                         }
-                         .onTapGesture {
-                             lightSleepPopover.toggle()
-                         }
-                         
-                         StatView(
-                             title: "Sleep Onset",
-                             value: averageSleepOnset,
-                             percentage: nil,
-                             description: "Average",
-                             icon: "clock.fill"
-                         )
-                         .popover(isPresented: Binding<Bool>(
-                             get: { sleepOnsetPopover },
-                             set: { sleepOnsetPopover = $0 }
-                         )) {
-                             PopoverTextView(title: "Sleep Onset", content: "Sleep onset, also known as sleep latency, is the time it takes to fall asleep after going to bed. A shorter sleep onset latency generally indicates better sleep quality. Factors like stress, caffeine, and irregular sleep schedules can increase sleep onset time.")
-                         }
-                         .onTapGesture {
-                             sleepOnsetPopover.toggle()
-                         }
-                         
-                         StatView(
-                             title: "Sleep Efficiency",
-                             value: sleepEfficiency,
-                             percentage: nil,
-                             description: "Time Asleep/In Bed",
-                             icon: "chart.bar.fill"
-                         )
-                         .popover(isPresented: Binding<Bool>(
-                             get: { sleepEfficiencyPopover },
-                             set: { sleepEfficiencyPopover = $0 }
-                         )) {
-                             PopoverTextView(title: "Sleep Efficiency", content: "Sleep efficiency is the percentage of time spent asleep relative to the total time spent in bed. Higher efficiency indicates better sleep quality, meaning you spend more time asleep than awake while in bed. An efficiency of 85% or higher is generally considered good.")
-                         }
-                         .onTapGesture {
-                             sleepEfficiencyPopover.toggle()
-                         }
-                         
-                         StatView(
-                             title: "Time in Bed",
-                             value: timeInBed,
-                             percentage: nil,
-                             description: "Total",
-                             icon: "bed.double.fill"
-                         )
-                         .popover(isPresented: Binding<Bool>(
-                             get: { timeInBedPopover },
-                             set: { timeInBedPopover = $0 }
-                         )) {
-                             PopoverTextView(title: "Time in Bed", content: "This is the total time spent in bed, including both sleep and wake periods. It's measured from the moment you get into bed with the intention to sleep until the moment you get out of bed for the final time.")
-                         }
-                         .onTapGesture {
-                             timeInBedPopover.toggle()
-                         }
-                         
-                         StatView(
-                             title: "Sleep Consistency",
-                             value: sleepConsistency,
-                             percentage: nil,
-                             description: "Between Days",
-                             icon: "repeat.circle.fill"
-                         )
-                         .popover(isPresented: Binding<Bool>(
-                             get: { sleepConsistencyPopover },
-                             set: { sleepConsistencyPopover = $0 }
-                         )) {
-                             PopoverTextView(title: "Sleep Consistency", content: "Sleep consistency measures the regularity of your sleep schedule over multiple days. Maintaining a consistent sleep schedule (going to bed and waking up around the same time each day) can improve sleep quality by regulating your body's natural sleep-wake cycle (circadian rhythm).")
-                         }
-                         .onTapGesture {
-                             sleepConsistencyPopover.toggle()
-                         }
-                         
-                         StatView(
-                             title: "Heart Rate Dip",
-                             value: heartRateDip,
-                             percentage: nil,
-                             description: "Average",
-                             icon: "heart.fill"
-                         )
-                         .popover(isPresented: Binding<Bool>(
-                             get: { heartRateDipPopover },
-                             set: { heartRateDipPopover = $0 }
-                         )) {
-                             PopoverTextView(title: "Heart Rate Dip", content: "Heart rate dip during sleep is a normal physiological response where your heart rate decreases compared to your waking heart rate. A significant dip (typically 10-20%) is generally associated with better cardiovascular health and restorative sleep.")
-                         }
-                         .onTapGesture {
-                             heartRateDipPopover.toggle()
-                         }
-                         
-                         StatView(
-                             title: "Interruptions",
-                             value: "\(sleepInterruptions)",
-                             percentage: nil,
-                             description: "Awakenings",
-                             icon: "exclamationmark.triangle.fill"
-                         )
-                         .popover(isPresented: Binding<Bool>(
-                             get: { interruptionsPopover },
-                             set: { interruptionsPopover = $0 }
-                         )) {
-                             PopoverTextView(title: "Interruptions", content: "Sleep interruptions are brief awakenings during the night. Fewer interruptions typically indicate better sleep quality as they can disrupt the natural progression through sleep stages. Frequent interruptions may be a sign of a sleep disorder or other underlying health condition.")
-                         }
-                         .onTapGesture {
-                             interruptionsPopover.toggle()
-                         }
-                         
-                         StatView(
-                             title: "Transitions",
-                             value: "\(sleepStageTransitions)",
-                             percentage: nil,
-                             description: "Stage Changes",
-                             icon: "arrow.triangle.2.circlepath"
-                         )
-                         .popover(isPresented: Binding<Bool>(
-                             get: { transitionsPopover },
-                             set: { transitionsPopover = $0 }
-                         )) {
-                             PopoverTextView(title: "Transitions", content: "Sleep stage transitions are the shifts between different sleep stages (e.g., light, deep, REM). The number and pattern of transitions can affect sleep quality. A healthy sleep pattern involves smooth transitions between stages throughout the night.")
-                         }
-                         .onTapGesture {
-                             transitionsPopover.toggle()
-                         }
-                         
-                         // New Stat View Additions with PopoverTextViews
-                         StatView(title: "Avg. Sleeping HR", value: averageSleepingHeartRate, percentage: nil, description: "Heart Rate", icon: "heart.fill")
-                             .popover(isPresented: Binding<Bool>(
-                                 get: { averageSleepingHeartRatePopover },
-                                 set: { averageSleepingHeartRatePopover = $0 }
-                             )) {
-                                 PopoverTextView(title: "Avg. Sleeping HR", content: "Average Sleeping Heart Rate represents the average number of heartbeats per minute while you're asleep. It's typically lower than your waking heart rate and can be an indicator of cardiovascular health. A lower sleeping heart rate is often associated with better fitness and more efficient heart function.")
-                             }
-                             .onTapGesture {
-                                 averageSleepingHeartRatePopover.toggle()
-                             }
-
-                         StatView(title: "Avg. Sleeping HRV", value: averageSleepingHRV, percentage: nil, description: "HRV", icon: "heart.text.square.fill")
-                             .popover(isPresented: Binding<Bool>(
-                                 get: { averageSleepingHRVPopover },
-                                 set: { averageSleepingHRVPopover = $0 }
-                             )) {
-                                 PopoverTextView(title: "Avg. Sleeping HRV", content: "Average Sleeping Heart Rate Variability (HRV) measures the variation in time intervals between heartbeats during sleep. It reflects the balance of your autonomic nervous system. Higher HRV during sleep is generally associated with better recovery, stress resilience, and overall health.")
-                             }
-                             .onTapGesture {
-                                 averageSleepingHRVPopover.toggle()
-                             }
-
-                         StatView(title: "Avg. Sleeping Blood O2", value: averageSleepingBloodOxygen, percentage: nil, description: "Blood Oxygen", icon: "lungs.fill")
-                             .popover(isPresented: Binding<Bool>(
-                                 get: { averageSleepingBloodOxygenPopover },
-                                 set: { averageSleepingBloodOxygenPopover = $0 }
-                             )) {
-                                 PopoverTextView(title: "Avg. Sleeping Blood O2", content: "Average Sleeping Blood Oxygen Saturation (SpO2) indicates the percentage of oxygen in your blood during sleep. Normal levels are typically between 95-100%. Consistently low levels may indicate a sleep-related breathing disorder like sleep apnea and should be discussed with a doctor.")
-                             }
-                             .onTapGesture {
-                                 averageSleepingBloodOxygenPopover.toggle()
-                             }
-
-                         StatView(title: "Avg. Respiratory Rate", value: averageRespiratoryRate, percentage: nil, description: "Breaths/Min", icon: "wind")
-                             .popover(isPresented: Binding<Bool>(
-                                 get: { averageRespiratoryRatePopover },
-                                 set: { averageRespiratoryRatePopover = $0 }
-                             )) {
-                                 PopoverTextView(title: "Avg. Respiratory Rate", content: "Average Respiratory Rate during sleep is the average number of breaths you take per minute while asleep. A normal range is typically between 12-20 breaths per minute. Changes in respiratory rate during sleep can be influenced by factors such as sleep stage, age, and health conditions.")
-                             }
-                             .onTapGesture {
-                                 averageRespiratoryRatePopover.toggle()
-                             }
-                     }
+                        // ... rest of your LazyVGrid StatView code ...
+                        StatView(
+                            title: "Deep Sleep",
+                            value: deepSleep,
+                            percentage: calculateSleepStagePercentage(stage: 3),
+                            description: nil,
+                            icon: "moon.zzz.fill"
+                        )
+                        .popover(isPresented: Binding<Bool>(
+                            get: { deepSleepPopover },
+                            set: { deepSleepPopover = $0 }
+                        )) {
+                            PopoverTextView(title: "Deep Sleep", content: "Deep sleep, also known as slow-wave sleep (SWS), is crucial for physical restoration, muscle repair, and growth hormone release. During this stage, brain waves are at their slowest, and it's difficult to awaken someone. Deep sleep also plays a role in consolidating declarative memories (facts and events).")
+                        }
+                        .onTapGesture {
+                            deepSleepPopover.toggle()
+                        }
+                        
+                        StatView(
+                            title: "REM Sleep",
+                            value: remSleep,
+                            percentage: calculateSleepStagePercentage(stage: 4),
+                            description: nil,
+                            icon: "moon.stars.fill"
+                        )
+                        .popover(isPresented: Binding<Bool>(
+                            get: { remSleepPopover },
+                            set: { remSleepPopover = $0 }
+                        )) {
+                            PopoverTextView(title: "REM Sleep", content: "REM sleep is important for cognitive functions, memory consolidation, and emotional regulation. Characterized by rapid eye movements and brain activity similar to wakefulness, it's the stage where most vivid dreams occur. REM sleep helps process emotions, enhances creativity, and contributes to learning.")
+                        }
+                        .onTapGesture {
+                            remSleepPopover.toggle()
+                        }
+                        
+                        StatView(
+                            title: "Light Sleep",
+                            value: lightSleep,
+                            percentage: calculateSleepStagePercentage(stage: 2),
+                            description: nil,
+                            icon: "moon.fill"
+                        )
+                        .popover(isPresented: Binding<Bool>(
+                            get: { lightSleepPopover },
+                            set: { lightSleepPopover = $0 }
+                        )) {
+                            PopoverTextView(title: "Light Sleep", content: "Light sleep serves as a transition between wakefulness and deeper sleep stages, contributing to overall sleep architecture. It is the most common sleep stage, making up about 50-60% of total sleep time. During light sleep, muscle activity decreases, and eye movements stop, preparing the body for deeper sleep stages.")
+                        }
+                        .onTapGesture {
+                            lightSleepPopover.toggle()
+                        }
+                        
+                        StatView(
+                            title: "Sleep Onset",
+                            value: averageSleepOnset,
+                            percentage: nil,
+                            description: "Average",
+                            icon: "clock.fill"
+                        )
+                        .popover(isPresented: Binding<Bool>(
+                            get: { sleepOnsetPopover },
+                            set: { sleepOnsetPopover = $0 }
+                        )) {
+                            PopoverTextView(title: "Sleep Onset", content: "Sleep onset, also known as sleep latency, is the time it takes to fall asleep after going to bed. A shorter sleep onset latency generally indicates better sleep quality. Factors like stress, caffeine, and irregular sleep schedules can increase sleep onset time.")
+                        }
+                        .onTapGesture {
+                            sleepOnsetPopover.toggle()
+                        }
+                        
+                        StatView(
+                            title: "Sleep Efficiency",
+                            value: sleepEfficiency,
+                            percentage: nil,
+                            description: "Time Asleep/In Bed",
+                            icon: "chart.bar.fill"
+                        )
+                        .popover(isPresented: Binding<Bool>(
+                            get: { sleepEfficiencyPopover },
+                            set: { sleepEfficiencyPopover = $0 }
+                        )) {
+                            PopoverTextView(title: "Sleep Efficiency", content: "Sleep efficiency is the percentage of time spent asleep relative to the total time spent in bed. Higher efficiency indicates better sleep quality, meaning you spend more time asleep than awake while in bed. An efficiency of 85% or higher is generally considered good.")
+                        }
+                        .onTapGesture {
+                            sleepEfficiencyPopover.toggle()
+                        }
+                        
+                        StatView(
+                            title: "Time in Bed",
+                            value: timeInBed,
+                            percentage: nil,
+                            description: "Total",
+                            icon: "bed.double.fill"
+                        )
+                        .popover(isPresented: Binding<Bool>(
+                            get: { timeInBedPopover },
+                            set: { timeInBedPopover = $0 }
+                        )) {
+                            PopoverTextView(title: "Time in Bed", content: "This is the total time spent in bed, including both sleep and wake periods. It's measured from the moment you get into bed with the intention to sleep until the moment you get out of bed for the final time.")
+                        }
+                        .onTapGesture {
+                            timeInBedPopover.toggle()
+                        }
+                        
+                        StatView(
+                            title: "Sleep Consistency",
+                            value: sleepConsistency,
+                            percentage: nil,
+                            description: "Between Days",
+                            icon: "repeat.circle.fill"
+                        )
+                        .popover(isPresented: Binding<Bool>(
+                            get: { sleepConsistencyPopover },
+                            set: { sleepConsistencyPopover = $0 }
+                        )) {
+                            PopoverTextView(title: "Sleep Consistency", content: "Sleep consistency measures the regularity of your sleep schedule over multiple days. Maintaining a consistent sleep schedule (going to bed and waking up around the same time each day) can improve sleep quality by regulating your body's natural sleep-wake cycle (circadian rhythm).")
+                        }
+                        .onTapGesture {
+                            sleepConsistencyPopover.toggle()
+                        }
+                        
+                        StatView(
+                            title: "Heart Rate Dip",
+                            value: heartRateDip,
+                            percentage: nil,
+                            description: "Average",
+                            icon: "heart.fill"
+                        )
+                        .popover(isPresented: Binding<Bool>(
+                            get: { heartRateDipPopover },
+                            set: { heartRateDipPopover = $0 }
+                        )) {
+                            PopoverTextView(title: "Heart Rate Dip", content: "Heart rate dip during sleep is a normal physiological response where your heart rate decreases compared to your waking heart rate. A significant dip (typically 10-20%) is generally associated with better cardiovascular health and restorative sleep.")
+                        }
+                        .onTapGesture {
+                            heartRateDipPopover.toggle()
+                        }
+                        
+                        StatView(
+                            title: "Interruptions",
+                            value: "\(sleepInterruptions)",
+                            percentage: nil,
+                            description: "Awakenings",
+                            icon: "exclamationmark.triangle.fill"
+                        )
+                        .popover(isPresented: Binding<Bool>(
+                            get: { interruptionsPopover },
+                            set: { interruptionsPopover = $0 }
+                        )) {
+                            PopoverTextView(title: "Interruptions", content: "Sleep interruptions are brief awakenings during the night. Fewer interruptions typically indicate better sleep quality as they can disrupt the natural progression through sleep stages. Frequent interruptions may be a sign of a sleep disorder or other underlying health condition.")
+                        }
+                        .onTapGesture {
+                            interruptionsPopover.toggle()
+                        }
+                        
+                        StatView(
+                            title: "Transitions",
+                            value: "\(sleepStageTransitions)",
+                            percentage: nil,
+                            description: "Stage Changes",
+                            icon: "arrow.triangle.2.circlepath"
+                        )
+                        .popover(isPresented: Binding<Bool>(
+                            get: { transitionsPopover },
+                            set: { transitionsPopover = $0 }
+                        )) {
+                            PopoverTextView(title: "Transitions", content: "Sleep stage transitions are the shifts between different sleep stages (e.g., light, deep, REM). The number and pattern of transitions can affect sleep quality. A healthy sleep pattern involves smooth transitions between stages throughout the night.")
+                        }
+                        .onTapGesture {
+                            transitionsPopover.toggle()
+                        }
+                        
+                        // New Stat View Additions with PopoverTextViews
+                        StatView(title: "Avg. Sleeping HR", value: averageSleepingHeartRate, percentage: nil, description: "Heart Rate", icon: "heart.fill")
+                            .popover(isPresented: Binding<Bool>(
+                                get: { averageSleepingHeartRatePopover },
+                                set: { averageSleepingHeartRatePopover = $0 }
+                            )) {
+                                PopoverTextView(title: "Avg. Sleeping HR", content: "Average Sleeping Heart Rate represents the average number of heartbeats per minute while you're asleep. It's typically lower than your waking heart rate and can be an indicator of cardiovascular health. A lower sleeping heart rate is often associated with better fitness and more efficient heart function.")
+                            }
+                            .onTapGesture {
+                                averageSleepingHeartRatePopover.toggle()
+                            }
+                        
+                        StatView(title: "Avg. Sleeping HRV", value: averageSleepingHRV, percentage: nil, description: "HRV", icon: "heart.text.square.fill")
+                            .popover(isPresented: Binding<Bool>(
+                                get: { averageSleepingHRVPopover },
+                                set: { averageSleepingHRVPopover = $0 }
+                            )) {
+                                PopoverTextView(title: "Avg. Sleeping HRV", content: "Average Sleeping Heart Rate Variability (HRV) measures the variation in time intervals between heartbeats during sleep. It reflects the balance of your autonomic nervous system. Higher HRV during sleep is generally associated with better recovery, stress resilience, and overall health.")
+                            }
+                            .onTapGesture {
+                                averageSleepingHRVPopover.toggle()
+                            }
+                        
+                        StatView(title: "Avg. Sleeping Blood O2", value: averageSleepingBloodOxygen, percentage: nil, description: "Blood Oxygen", icon: "lungs.fill")
+                            .popover(isPresented: Binding<Bool>(
+                                get: { averageSleepingBloodOxygenPopover },
+                                set: { averageSleepingBloodOxygenPopover = $0 }
+                            )) {
+                                PopoverTextView(title: "Avg. Sleeping Blood O2", content: "Average Sleeping Blood Oxygen Saturation (SpO2) indicates the percentage of oxygen in your blood during sleep. Normal levels are typically between 95-100%. Consistently low levels may indicate a sleep-related breathing disorder like sleep apnea and should be discussed with a doctor.")
+                            }
+                            .onTapGesture {
+                                averageSleepingBloodOxygenPopover.toggle()
+                            }
+                        
+                        StatView(title: "Avg. Respiratory Rate", value: averageRespiratoryRate, percentage: nil, description: "Breaths/Min", icon: "wind")
+                            .popover(isPresented: Binding<Bool>(
+                                get: { averageRespiratoryRatePopover },
+                                set: { averageRespiratoryRatePopover = $0 }
+                            )) {
+                                PopoverTextView(title: "Avg. Respiratory Rate", content: "Average Respiratory Rate during sleep is the average number of breaths you take per minute while asleep. A normal range is typically between 12-20 breaths per minute. Changes in respiratory rate during sleep can be influenced by factors such as sleep stage, age, and health conditions.")
+                            }
+                            .onTapGesture {
+                                averageRespiratoryRatePopover.toggle()
+                            }
+                    }
                     .frame(maxWidth: .infinity)
                 }
                 .padding()
@@ -337,8 +360,21 @@ struct SleepDashboardView: View {
             .onAppear {
                 checkHealthKitAuthorization()
             }
+            .onChange(of: sleepData) { _ in
+                calculateSleepQualityScore()
+            }
+            .onChange(of: sleepConsistency) { _ in
+                calculateSleepQualityScore()
+            }
+            .onChange(of: heartRateDip) { _ in
+                calculateSleepQualityScore()
+            }
+            .onChange(of: averageSleepingHRV) { _ in
+                calculateSleepQualityScore()
+            }
         }
     }
+    
     
     @State private var deepSleepPopover = false
     @State private var remSleepPopover = false
@@ -385,7 +421,6 @@ struct SleepDashboardView: View {
             }
         }
     }
-    
     
     func fetchSleepData(for date: Date) {
         isLoading = true
@@ -727,15 +762,15 @@ struct SleepDashboardView: View {
             }
             return
         }
-
+        
         guard let sleepStart = sleepData
-                .filter({ [0, 2, 3, 4].contains($0.sleepStage) })
-                .map({ $0.date })  // no localTime adjustment
-                .min(),
+            .filter({ [0, 2, 3, 4].contains($0.sleepStage) })
+            .map({ $0.date })  // no localTime adjustment
+            .min(),
               let sleepEnd = sleepData
-                .filter({ [0, 2, 3, 4].contains($0.sleepStage) })
-                .map({ $0.date.addingTimeInterval($0.duration) })  // no localTime adjustment
-                .max() else {
+            .filter({ [0, 2, 3, 4].contains($0.sleepStage) })
+            .map({ $0.date.addingTimeInterval($0.duration) })  // no localTime adjustment
+            .max() else {
             print("Could not determine sleep period from sleep data.")
             DispatchQueue.main.async {
                 self.averageRespiratoryRate = "N/A - No Sleep Data"
@@ -868,7 +903,7 @@ struct SleepDashboardView: View {
             }
         }
         sleepStageTransitions = transitionsCount
-
+        
         calculateSleepConsistency(for: selectedDate)
     }
     
@@ -949,331 +984,443 @@ struct SleepDashboardView: View {
         let minutes = Int(seconds) % 3600 / 60
         return String(format: "%dh %02dm", hours, minutes)
     }
-}
-
-struct CircularProgressView: View {
-    let percentage: CGFloat
-    let title: String
-    let value: String
     
-    var body: some View {
-        VStack {
-            ZStack {
-                Circle()
-                    .stroke(Color.gray.opacity(0.3), lineWidth: 10)
-                Circle()
-                    .trim(from: 0, to: percentage)
-                    .stroke(Color.green, lineWidth: 10)
-                    .rotationEffect(.degrees(-90))
-                Text("\(Int(percentage * 100))%")
-                    .font(.headline)
-                    .foregroundColor(.white)
-            }
-            .frame(width: 100, height: 100)
-            Text(title)
-                .font(.caption)
-                .multilineTextAlignment(.center)
-                .foregroundColor(.white)
-            Text(value)
-                .font(.caption)
-                .foregroundColor(.gray)
+    func calculateSleepQualityScore() {
+        guard !sleepData.isEmpty else {
+            sleepQualityScore = nil
+            return
         }
-    }
-}
 
-struct StatView: View {
-    let title: String
-    let value: String
-    let percentage: String?
-    let description: String?
-    let icon: String?
-    
-    var body: some View {
-        VStack {
-            HStack {
-                if let icon = icon {
-                    Image(systemName: icon)
-                        .font(.title3)
-                        .foregroundColor(.blue.opacity(0.8))
-                }
-                Text(value)
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
-            }
-            if let percentage = percentage {
-                Text(percentage)
-                    .font(.caption)
-                    .foregroundColor(.gray)
-            } else if let description = description {
-                Text(description)
-                    .font(.caption)
-                    .foregroundColor(.gray)
-            }
-            Text(title)
-                .font(.caption)
-                .multilineTextAlignment(.center)
-                .foregroundColor(.white)
+        var score = 0
+        let maxPossibleScore = 100
+
+        // 1. Total Sleep Duration (Target: 7-9 hours) - Lenient Scoring
+        let totalSleepSeconds = sleepData.filter { [2, 3, 4].contains($0.sleepStage) }.reduce(0) { $0 + $1.duration }
+        let totalSleepHours = totalSleepSeconds / 3600
+
+        if totalSleepHours >= 7 && totalSleepHours <= 9 {
+            score += 30  // Ideal range
+        } else if totalSleepHours >= 6 && totalSleepHours < 7 {
+            score += 20  // Slightly below ideal
+        } else if totalSleepHours > 9 && totalSleepHours <= 10 {
+            score += 20  // Slightly above ideal
+        } else if totalSleepHours > 5 && totalSleepHours < 6 {
+            score += 10 // Below ideal
+        } else {
+            score += 5 // Significantly outside ideal range
         }
-        .padding()
-        .frame(maxWidth: .infinity)
-        .background(Color(UIColor.systemGray6))
-        .cornerRadius(12)
-    }
-}
 
-struct ChartView: View {
-    let sleepData: [SleepData]
-    
-    var body: some View {
-        VStack {
-            Chart {
-                ForEach(sleepData, id: \.date) { dataPoint in
-                    BarMark(
-                        x: .value("Time", formatHour(dataPoint.hour)),
-                        y: .value("Sleep Stage", dataPoint.sleepStage)
-                    )
-                    .foregroundStyle(colorForSleepStage(dataPoint.sleepStage))
-                }
-            }
-            HStack(spacing: 16) {
-                ForEach(sleepStages, id: \.stage) { sleepStage in
-                    LegendItem(
-                        color: colorForSleepStage(sleepStage.stage),
-                        label: sleepStage.label
-                    )
-                }
-            }
-            .padding(.top, 8)
-        }
-    }
-    
-    let sleepStages: [(stage: Int, label: String)] = [
-        (0, "In Bed"),
-        (1, "Awake"),
-        (2, "Light"),
-        (3, "Deep"),
-        (4, "REM")
-    ]
-    
-    func formatHour(_ hour: Int) -> String {
-        let hourOfDay = hour % 24
-        return "\(hourOfDay)\(hourOfDay < 12 ? "AM" : "PM")"
-    }
-    
-    func colorForSleepStage(_ stage: Int) -> Color {
-        switch stage {
-        case 0: return .gray
-        case 1: return .yellow
-        case 2: return .green.opacity(0.3)
-        case 3: return .blue.opacity(0.6)
-        case 4: return .purple.opacity(0.7)
-        default: return .gray
-        }
-    }
-}
-
-struct HRVLineChartView: View {
-    let hrvData: [HRVData]
-    let sleepData: [SleepData]
-
-    var body: some View {
-        Chart {
-            ForEach(filteredHRVData, id: \.date) { data in
-                LineMark(
-                    x: .value("Time", data.date, unit: .minute),
-                    y: .value("HRV (ms)", data.value)
-                )
-                .foregroundStyle(Color.red)
-                .symbol(Circle().strokeBorder(lineWidth: 2))
-            }
-
-            RuleMark(y: .value("Average", filteredHRVData.isEmpty ? 0 : filteredHRVData.reduce(0) { $0 + $1.value } / Double(filteredHRVData.count)))
-                .foregroundStyle(Color.gray)
-                .lineStyle(StrokeStyle(dash: [5]))
-                .annotation(position: .trailing, alignment: .center) {
-                    Text("AVG")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+        // 2. Sleep Efficiency (Target: 85%+) - Lenient Scoring
+        if let sleepEfficiencyValue = Double(sleepEfficiency.replacingOccurrences(of: "%", with: "")) {
+            if sleepEfficiencyValue >= 85 {
+                score += 20
+            } else if sleepEfficiencyValue >= 75 {
+                score += 15
+            } else if sleepEfficiencyValue >= 65 {
+                score += 10
+            } else {
+                score += 5
             }
         }
-        .chartYAxis {
-            AxisMarks(position: .leading)
-        }
-        .chartXAxis {
-            AxisMarks(values: .stride(by: .hour, count: 1)) { value in
-                AxisGridLine()
-                AxisTick()
-                AxisValueLabel(format: .dateTime.hour(.defaultDigits(amPM: .abbreviated)).minute())
+
+        // 3. Deep Sleep Percentage (Target: 13-23%) - Lenient Scoring
+        if let deepSleepPercentage = Double(calculateSleepStagePercentage(stage: 3).replacingOccurrences(of: "%", with: "")) {
+            if deepSleepPercentage >= 13 && deepSleepPercentage <= 23 {
+                score += 15
+            } else if deepSleepPercentage > 23 {
+                score += 10 // Slightly above ideal range
+            } else if deepSleepPercentage >= 10 && deepSleepPercentage < 13 {
+                score += 5 // Slightly below ideal range
+            } else {
+                score += 2 // Considerably below ideal range
             }
         }
-        .chartXScale(domain: xDomain)
-    }
 
-    // Filter HRV data based on sleep time
-    private var filteredHRVData: [HRVData] {
-        guard let sleepStart = sleepStartTime, let sleepEnd = sleepEndTime else {
-            return []
-        }
-
-        return hrvData.filter { data in
-            data.date >= sleepStart && data.date <= sleepEnd
-        }
-    }
-
-    // Calculate the domain for the x-axis based on sleep times
-    private var xDomain: ClosedRange<Date> {
-        guard let sleepStart = sleepStartTime, let sleepEnd = sleepEndTime else {
-            return Date()...Date()
-        }
-        return sleepStart...sleepEnd
-    }
-
-    // Correctly determine sleep start time
-    private var sleepStartTime: Date? {
-        sleepData.filter { $0.sleepStage != 1 } // Filter out "awake" periods
-            .map { $0.date }                 // Extract the start dates
-            .min()                          // Get the earliest start date
-    }
-
-    // Correctly determine sleep end time
-    private var sleepEndTime: Date? {
-        guard let sleepStart = sleepStartTime else { return nil }
-
-        // Find the last sleep segment that isn't "awake"
-        guard let lastSleepSegment = sleepData.filter({ $0.sleepStage != 1 }).max(by: { $0.date < $1.date }) else { return nil }
-
-        let sleepEnd = sleepData
-            .filter { $0.sleepStage != 1 && $0.date >= sleepStart } // Consider only sleep segments after sleepStart
-            .map { $0.date.addingTimeInterval($0.duration) } // Calculate end time of each segment
-            .max() // Get the latest end time
-
-        // Return the end time of the last sleep segment, or the end of the last segment if somehow that is missing
-        return sleepEnd ?? lastSleepSegment.date.addingTimeInterval(lastSleepSegment.duration)
-    }
-}
-
-struct SleepTrend: Identifiable {
-    let id = UUID()
-    let day: String
-    let totalSleepHours: Double
-}
-
-struct SleepStageDistributionView: View {
-    let sleepData: [SleepData]
-    
-    var body: some View {
-        Chart {
-            ForEach(sleepStageDistribution, id: \.stage) { stage in
-                BarMark(
-                    x: .value("Sleep Stage", stage.label),
-                    y: .value("Duration (hrs)", stage.durationHours)
-                )
-                .foregroundStyle(colorForSleepStage(stage.stage))
+        // 4. REM Sleep Percentage (Target: 20-25%) - Lenient Scoring
+        if let remSleepPercentage = Double(calculateSleepStagePercentage(stage: 4).replacingOccurrences(of: "%", with: "")) {
+            if remSleepPercentage >= 20 && remSleepPercentage <= 25 {
+                score += 15
+            } else if remSleepPercentage > 25 {
+                score += 10  // Slightly above ideal range
+            } else if remSleepPercentage >= 15 && remSleepPercentage < 20 {
+                score += 5 // Slightly below ideal range
+            } else {
+                score += 2 // Considerably below ideal range
             }
         }
-        .chartYAxis {
-            AxisMarks(position: .leading)
-        }
-        .chartXAxis {
-            AxisMarks(position: .bottom)
-        }
-    }
-    
-    var sleepStageDistribution: [SleepStage] {
-        let stages = [0, 1, 2, 3, 4]
-        return stages.map { stage in
-            let stageData = sleepData.filter { $0.sleepStage == stage }
-            let totalSeconds = stageData.reduce(0) { $0 + $1.duration }
-            let hours = totalSeconds / 3600
-            let label: String
-            switch stage {
-            case 0: label = "In Bed"
-            case 1: label = "Awake"
-            case 2: label = "Light"
-            case 3: label = "Deep"
-            case 4: label = "REM"
-            default: label = "Unknown"
+
+        // 5. Sleep Consistency (Target: 80%+) - Lenient Scoring
+        if let sleepConsistencyValue = Double(sleepConsistency.replacingOccurrences(of: "%", with: "")) {
+            if sleepConsistencyValue >= 80 {
+                score += 10
+            } else if sleepConsistencyValue >= 60 {
+                score += 5
+            } else {
+                score += 2
             }
-            return SleepStage(stage: stage, label: label, durationHours: hours)
         }
-    }
-    
-    func colorForSleepStage(_ stage: Int) -> Color {
-        switch stage {
-        case 0: return .gray
-        case 1: return .yellow
-        case 2: return .green.opacity(0.3)
-        case 3: return .blue.opacity(0.6)
-        case 4: return .purple.opacity(0.7)
-        default: return .gray
+
+        // 6. Heart Rate Dip (Target: 10%+) - Lenient Scoring
+        if let heartRateDipValue = Double(heartRateDip.replacingOccurrences(of: "%", with: "")) {
+            if heartRateDipValue >= 10 {
+                score += 5
+            } else {
+                score += 2
+            }
         }
-    }
-}
 
-struct SleepStage: Identifiable {
-    let id = UUID()
-    let stage: Int
-    let label: String
-    let durationHours: Double
-}
-
-struct LegendItem: View {
-    let color: Color
-    let label: String
-    
-    var body: some View {
-        HStack(spacing: 4) {
-            Circle()
-                .fill(color)
-                .frame(width: 8, height: 8)
-            Text(label)
-                .font(.caption)
-                .foregroundColor(.gray)
+        // 7. Average Sleeping HRV (Example Thresholds) - Lenient Scoring
+        if let averageSleepingHRVValue = Double(averageSleepingHRV.replacingOccurrences(of: " ms", with: "")) {
+            if averageSleepingHRVValue > 50 {
+                score += 5
+            } else if averageSleepingHRVValue > 30 {
+                score += 2
+            } else {
+                score += 1
+            }
         }
-    }
-}
 
-struct SleepData {
+        // 8. Number of Awakenings (Sleep Interruptions) - Reduced Penalty
+        // Subtract 1 points for each awakening
+        score = max(0, score - sleepInterruptions)
+
+        // Ensure the score doesn't exceed the maximum possible score
+        sleepQualityScore = min(maxPossibleScore, score)
+    }}
+                    struct CircularProgressView: View {
+                        let percentage: CGFloat
+                        let title: String
+                        let value: String
+
+                        var body: some View {
+                            VStack {
+                                ZStack {
+                                    Circle()
+                                        .stroke(Color.gray.opacity(0.3), lineWidth: 10)
+                                    Circle()
+                                        .trim(from: 0, to: percentage)
+                                        .stroke(Color.green, lineWidth: 10)
+                                        .rotationEffect(.degrees(-90))
+                                    Text("\(Int(percentage * 100))%")
+                                        .font(.headline)
+                                        .foregroundColor(.white)
+                                }
+                                .frame(width: 100, height: 100)
+                                Text(title)
+                                    .font(.caption)
+                                    .multilineTextAlignment(.center)
+                                    .foregroundColor(.white)
+                                Text(value)
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                    }
+
+                    struct StatView: View {
+                        let title: String
+                        let value: String
+                        let percentage: String?
+                        let description: String?
+                        let icon: String?
+
+                        var body: some View {
+                            VStack {
+                                HStack {
+                                    if let icon = icon {
+                                        Image(systemName: icon)
+                                            .font(.title3)
+                                            .foregroundColor(.blue.opacity(0.8))
+                                    }
+                                    Text(value)
+                                        .font(.title2)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.white)
+                                }
+                                if let percentage = percentage {
+                                    Text(percentage)
+                                        .font(.caption)
+                                        .foregroundColor(.gray)
+                                } else if let description = description {
+                                    Text(description)
+                                        .font(.caption)
+                                        .foregroundColor(.gray)
+                                }
+                                Text(title)
+                                    .font(.caption)
+                                    .multilineTextAlignment(.center)
+                                    .foregroundColor(.white)
+                            }
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(Color(UIColor.systemGray6))
+                            .cornerRadius(12)
+                        }
+                    }
+
+                    struct ChartView: View {
+                        let sleepData: [SleepData]
+
+                        var body: some View {
+                            VStack {
+                                Chart {
+                                    ForEach(sleepData, id: \.date) { dataPoint in
+                                        BarMark(
+                                            x: .value("Time", formatHour(dataPoint.hour)),
+                                            y: .value("Sleep Stage", dataPoint.sleepStage)
+                                        )
+                                        .foregroundStyle(colorForSleepStage(dataPoint.sleepStage))
+                                    }
+                                }
+                                HStack(spacing: 16) {
+                                    ForEach(sleepStages, id: \.stage) { sleepStage in
+                                        LegendItem(
+                                            color: colorForSleepStage(sleepStage.stage),
+                                            label: sleepStage.label
+                                        )
+                                    }
+                                }
+                                .padding(.top, 8)
+                            }
+                        }
+
+                        let sleepStages: [(stage: Int, label: String)] = [
+                            (0, "In Bed"),
+                            (1, "Awake"),
+                            (2, "Light"),
+                            (3, "Deep"),
+                            (4, "REM")
+                        ]
+
+                        func formatHour(_ hour: Int) -> String {
+                            let hourOfDay = hour % 24
+                            return "\(hourOfDay)\(hourOfDay < 12 ? "AM" : "PM")"
+                        }
+
+                        func colorForSleepStage(_ stage: Int) -> Color {
+                            switch stage {
+                            case 0: return .gray
+                            case 1: return .yellow
+                            case 2: return .green.opacity(0.3)
+                            case 3: return .blue.opacity(0.6)
+                            case 4: return .purple.opacity(0.7)
+                            default: return .gray
+                            }
+                        }
+                    }
+
+                    struct HRVLineChartView: View {
+                        let hrvData: [HRVData]
+                        let sleepData: [SleepData]
+
+                        var body: some View {
+                            Chart {
+                                ForEach(filteredHRVData, id: \.date) { data in
+                                    LineMark(
+                                        x: .value("Time", data.date, unit: .minute),
+                                        y: .value("HRV (ms)", data.value)
+                                    )
+                                    .foregroundStyle(Color.red)
+                                    .symbol(Circle().strokeBorder(lineWidth: 2))
+                                }
+
+                                RuleMark(y: .value("Average", filteredHRVData.isEmpty ? 0 : filteredHRVData.reduce(0) { $0 + $1.value } / Double(filteredHRVData.count)))
+                                    .foregroundStyle(Color.gray)
+                                    .lineStyle(StrokeStyle(dash: [5]))
+                                    .annotation(position: .trailing, alignment: .center) {
+                                        Text("AVG")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                }
+                            }
+                            .chartYAxis {
+                                AxisMarks(position: .leading)
+                            }
+                            .chartXAxis {
+                                AxisMarks(values: .stride(by: .hour, count: 1)) { value in
+                                    AxisGridLine()
+                                    AxisTick()
+                                    AxisValueLabel(format: .dateTime.hour(.defaultDigits(amPM: .abbreviated)).minute())
+                                }
+                            }
+                            .chartXScale(domain: xDomain)
+                        }
+
+                        // Filter HRV data based on sleep time
+                        private var filteredHRVData: [HRVData] {
+                            guard let sleepStart = sleepStartTime, let sleepEnd = sleepEndTime else {
+                                return []
+                            }
+
+                            return hrvData.filter { data in
+                                data.date >= sleepStart && data.date <= sleepEnd
+                            }
+                        }
+
+                        // Calculate the domain for the x-axis based on sleep times
+                        private var xDomain: ClosedRange<Date> {
+                            guard let sleepStart = sleepStartTime, let sleepEnd = sleepEndTime else {
+                                return Date()...Date()
+                            }
+                            return sleepStart...sleepEnd
+                        }
+
+                        // Correctly determine sleep start time
+                        private var sleepStartTime: Date? {
+                            sleepData.filter { $0.sleepStage != 1 } // Filter out "awake" periods
+                                .map { $0.date }                 // Extract the start dates
+                                .min()                          // Get the earliest start date
+                        }
+
+                        // Correctly determine sleep end time
+                        private var sleepEndTime: Date? {
+                            guard let sleepStart = sleepStartTime else { return nil }
+
+                            // Find the last sleep segment that isn't "awake"
+                            guard let lastSleepSegment = sleepData.filter({ $0.sleepStage != 1 }).max(by: { $0.date < $1.date }) else { return nil }
+
+                            let sleepEnd = sleepData
+                                .filter { $0.sleepStage != 1 && $0.date >= sleepStart } // Consider only sleep segments after sleepStart
+                                .map { $0.date.addingTimeInterval($0.duration) } // Calculate end time of each segment
+                                .max() // Get the latest end time
+
+                            // Return the end time of the last sleep segment, or the end of the last segment if somehow that is missing
+                            return sleepEnd ?? lastSleepSegment.date.addingTimeInterval(lastSleepSegment.duration)
+                        }
+                    }
+
+                    struct SleepTrend: Identifiable {
+                        let id = UUID()
+                        let day: String
+                        let totalSleepHours: Double
+                    }
+
+                    struct SleepStageDistributionView: View {
+                        let sleepData: [SleepData]
+
+                        var body: some View {
+                            Chart {
+                                ForEach(sleepStageDistribution, id: \.stage) { stage in
+                                    BarMark(
+                                        x: .value("Sleep Stage", stage.label),
+                                        y: .value("Duration (hrs)", stage.durationHours)
+                                    )
+                                    .foregroundStyle(colorForSleepStage(stage.stage))
+                                }
+                            }
+                            .chartYAxis {
+                                AxisMarks(position: .leading)
+                            }
+                            .chartXAxis {
+                                AxisMarks(position: .bottom)
+                            }
+                        }
+
+                        var sleepStageDistribution: [SleepStage] {
+                            let stages = [0, 1, 2, 3, 4]
+                            return stages.map { stage in
+                                let stageData = sleepData.filter { $0.sleepStage == stage }
+                                let totalSeconds = stageData.reduce(0) { $0 + $1.duration }
+                                let hours = totalSeconds / 3600
+                                let label: String
+                                switch stage {
+                                case 0: label = "In Bed"
+                                case 1: label = "Awake"
+                                case 2: label = "Light"
+                                case 3: label = "Deep"
+                                case 4: label = "REM"
+                                default: label = "Unknown"
+                                }
+                                return SleepStage(stage: stage, label: label, durationHours: hours)
+                            }
+                        }
+
+                        func colorForSleepStage(_ stage: Int) -> Color {
+                            switch stage {
+                            case 0: return .gray
+                            case 1: return .yellow
+                            case 2: return .green.opacity(0.3)
+                            case 3: return .blue.opacity(0.6)
+                            case 4: return .purple.opacity(0.7)
+                            default: return .gray
+                            }
+                        }
+                    }
+
+                    struct SleepStage: Identifiable {
+                        let id = UUID()
+                        let stage: Int
+                        let label: String
+                        let durationHours: Double
+                    }
+
+                    struct LegendItem: View {
+                        let color: Color
+                        let label: String
+
+                        var body: some View {
+                            HStack(spacing: 4) {
+                                Circle()
+                                    .fill(color)
+                                    .frame(width: 8, height: 8)
+                                Text(label)
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                    }
+
+struct SleepData: Identifiable { // Add Identifiable conformance
+    let id = UUID() // Add an ID to conform to Identifiable
     let date: Date
     let hour: Int
     let sleepStage: Int
     let duration: TimeInterval
 }
 
-struct HRVData {
-    let date: Date
-    let value: Double
-}
-
-struct PopoverTextView: View {
-    let title: String
-    let content: String
-    
-    var body: some View {
-        VStack {
-            Text(title)
-                .font(.headline)
-                .padding(.bottom, 4)
-            Text(content)
-                .font(.body)
-        }
-        .padding()
-        .background(Color(UIColor.systemGray5))
-        .cornerRadius(10)
-        .shadow(radius: 5)
+extension SleepData: Equatable {
+    static func == (lhs: SleepData, rhs: SleepData) -> Bool {
+        return lhs.id == rhs.id && // Or compare other relevant properties
+               lhs.date == rhs.date &&
+               lhs.hour == rhs.hour &&
+               lhs.sleepStage == rhs.sleepStage &&
+               lhs.duration == rhs.duration
     }
 }
 
-#Preview {
-    SleepDashboardView()
-}
+                    struct HRVData {
+                        let date: Date
+                        let value: Double
+                    }
 
-// Helper extension to convert HKData to local time zone
-extension Date {
-    func toLocalTime() -> Date {
-        let timeZone = TimeZone.current
-        let seconds = TimeInterval(timeZone.secondsFromGMT(for: self))
-        return Date(timeInterval: seconds, since: self)
-    }
-}
+                    struct PopoverTextView: View {
+                        let title: String
+                        let content: String
+
+                        var body: some View {
+                            VStack {
+                                Text(title)
+                                    .font(.headline)
+                                    .padding(.bottom, 4)
+                                Text(content)
+                                    .font(.body)
+                            }
+                            .padding()
+                            .background(Color(UIColor.systemGray5))
+                            .cornerRadius(10)
+                            .shadow(radius: 5)
+                        }
+                    }
+
+                    #Preview {
+                        SleepDashboardView()
+                    }
+
+                    // Helper extension to convert HKData to local time zone
+                    extension Date {
+                        func toLocalTime() -> Date {
+                            let timeZone = TimeZone.current
+                            let seconds = TimeInterval(timeZone.secondsFromGMT(for: self))
+                            return Date(timeInterval: seconds, since: self)
+                        }
+                    }
