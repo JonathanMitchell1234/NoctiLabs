@@ -2,6 +2,47 @@ import SwiftUI
 import Charts
 import HealthKit
 
+// MARK: - Extensions
+extension SleepData: Equatable {
+    static func == (lhs: SleepData, rhs: SleepData) -> Bool {
+        return lhs.id == rhs.id && // Or compare other relevant properties
+               lhs.date == rhs.date &&
+               lhs.hour == rhs.hour &&
+               lhs.sleepStage == rhs.sleepStage &&
+               lhs.duration == rhs.duration
+    }
+}
+
+extension Date {
+    func toLocalTime() -> Date {
+        let timeZone = TimeZone.current
+        let seconds = TimeInterval(timeZone.secondsFromGMT(for: self))
+        return Date(timeInterval: seconds, since: self)
+    }
+}
+
+// MARK: - SleepData Struct
+struct SleepData: Identifiable { // Add Identifiable conformance
+    let id = UUID() // Add an ID to conform to Identifiable
+    let date: Date
+    let hour: Int
+    let sleepStage: Int
+    let duration: TimeInterval
+    
+    // Computed property to get the name of the sleep stage
+    var sleepStageName: String {
+        switch sleepStage {
+        case 0: return "In Bed"
+        case 1: return "Awake"
+        case 2: return "Light"
+        case 3: return "Deep"
+        case 4: return "REM"
+        default: return "Unknown"
+        }
+    }
+}
+
+// MARK: - SleepDashboardView Struct
 struct SleepDashboardView: View {
     @State private var selectedDate: Date = Date()
     @State private var sleepData: [SleepData] = []
@@ -19,14 +60,10 @@ struct SleepDashboardView: View {
     @State private var sleepInterruptions: Int = 0
     @State private var sleepStageTransitions: Int = 0
     @State private var hrvData: [HRVData] = []
-    
-    // New States
     @State private var averageSleepingHeartRate: String = "N/A"
     @State private var averageSleepingHRV: String = "N/A"
     @State private var averageSleepingBloodOxygen: String = "N/A"
     @State private var averageRespiratoryRate: String = "N/A"
-    
-    // New State for Sleep Quality Score
     @State private var sleepQualityScore: Int?
     
     let columns = [
@@ -65,7 +102,7 @@ struct SleepDashboardView: View {
                                 title: "Sleep Quality",
                                 value: "\(score)"
                             )
-                            .accentColor(.green) // Or any color you prefer for the gauge
+                            .accentColor(.green)
                         } else {
                             CircularProgressView(
                                 percentage: 0,
@@ -82,7 +119,6 @@ struct SleepDashboardView: View {
                         )
                     }
                     
-                    // ... rest of your SleepDashboardView code ...
                     VStack(alignment: .leading) {
                         Text("Sleep Pattern")
                             .font(.headline)
@@ -92,7 +128,7 @@ struct SleepDashboardView: View {
                             ProgressView()
                                 .frame(height: 200)
                         } else {
-                            ChartView(sleepData: sleepData)
+                            AreaChartView(sleepData: sleepData)
                                 .frame(height: 200)
                         }
                     }
@@ -135,7 +171,6 @@ struct SleepDashboardView: View {
                     .cornerRadius(12)
                     
                     LazyVGrid(columns: columns, spacing: 16) {
-                        // ... rest of your LazyVGrid StatView code ...
                         StatView(
                             title: "Deep Sleep",
                             value: deepSleep,
@@ -375,7 +410,6 @@ struct SleepDashboardView: View {
         }
     }
     
-    
     @State private var deepSleepPopover = false
     @State private var remSleepPopover = false
     @State private var lightSleepPopover = false
@@ -409,8 +443,6 @@ struct SleepDashboardView: View {
             if success {
                 fetchSleepData(for: selectedDate)
                 fetchHRVData(for: selectedDate)
-                
-                // Call new functions here
                 fetchAverageSleepingHeartRate(for: selectedDate)
                 fetchAverageSleepingHRV(for: selectedDate)
                 fetchAverageSleepingBloodOxygen(for: selectedDate)
@@ -484,10 +516,10 @@ struct SleepDashboardView: View {
                 
                 print("Sleep sample: \(sample), sleepStage: \(sleepStage), localStartDate: \(localStartDate), localEndDate: \(localEndDate)")
                 return SleepData(
-                    date: localStartDate,
-                    hour: Calendar.current.component(.hour, from: localStartDate),
+                    date: localStartDate,  // Use localStartDate
+                    hour: Calendar.current.component(.hour, from: localStartDate), // Use localStartDate
                     sleepStage: sleepStage,
-                    duration: localEndDate.timeIntervalSince(localStartDate)
+                    duration: localEndDate.timeIntervalSince(localStartDate) // Use localStartDate and localEndDate
                 )
             }
             
@@ -505,8 +537,6 @@ struct SleepDashboardView: View {
         }
         healthStore.execute(query)
     }
-    
-    
     
     func fetchHRVData(for date: Date) {
         guard let healthStore = healthStore else { return }
@@ -538,8 +568,6 @@ struct SleepDashboardView: View {
         healthStore.execute(query)
     }
     
-    
-    
     func fetchHeartRateDip(for date: Date) {
         guard let healthStore = healthStore else {
             heartRateDip = "N/A"
@@ -559,7 +587,6 @@ struct SleepDashboardView: View {
                 }
                 return
             }
-            
             var dayValues: [Double] = []
             var nightValues: [Double] = []
             let calendar = Calendar.current
@@ -573,7 +600,6 @@ struct SleepDashboardView: View {
                     nightValues.append(bpm)
                 }
             }
-            
             let avgDayHR = dayValues.isEmpty ? 0 : dayValues.reduce(0, +) / Double(dayValues.count)
             let avgNightHR = nightValues.isEmpty ? 0 : nightValues.reduce(0, +) / Double(nightValues.count)
             
@@ -583,7 +609,6 @@ struct SleepDashboardView: View {
                 }
                 return
             }
-            
             let dip = max(0, (avgDayHR - avgNightHR) / avgDayHR * 100)
             DispatchQueue.main.async {
                 self.heartRateDip = String(format: "%.0f%%", dip)
@@ -895,7 +920,7 @@ struct SleepDashboardView: View {
         sleepInterruptions = interruptionsCount
         
         var transitionsCount = 0
-        if sortedSleepData.count >= 2 { // Add the check here as well!
+        if sortedSleepData.count >= 2 {
             for i in 1..<sortedSleepData.count {
                 if sortedSleepData[i].sleepStage != sortedSleepData[i-1].sleepStage {
                     transitionsCount += 1
@@ -990,14 +1015,14 @@ struct SleepDashboardView: View {
             sleepQualityScore = nil
             return
         }
-
+        
         var score = 0
         let maxPossibleScore = 100
-
+        
         // 1. Total Sleep Duration (Target: 7-9 hours) - Lenient Scoring
         let totalSleepSeconds = sleepData.filter { [2, 3, 4].contains($0.sleepStage) }.reduce(0) { $0 + $1.duration }
         let totalSleepHours = totalSleepSeconds / 3600
-
+        
         if totalSleepHours >= 7 && totalSleepHours <= 9 {
             score += 30  // Ideal range
         } else if totalSleepHours >= 6 && totalSleepHours < 7 {
@@ -1009,7 +1034,7 @@ struct SleepDashboardView: View {
         } else {
             score += 5 // Significantly outside ideal range
         }
-
+        
         // 2. Sleep Efficiency (Target: 85%+) - Lenient Scoring
         if let sleepEfficiencyValue = Double(sleepEfficiency.replacingOccurrences(of: "%", with: "")) {
             if sleepEfficiencyValue >= 85 {
@@ -1022,7 +1047,7 @@ struct SleepDashboardView: View {
                 score += 5
             }
         }
-
+        
         // 3. Deep Sleep Percentage (Target: 13-23%) - Lenient Scoring
         if let deepSleepPercentage = Double(calculateSleepStagePercentage(stage: 3).replacingOccurrences(of: "%", with: "")) {
             if deepSleepPercentage >= 13 && deepSleepPercentage <= 23 {
@@ -1035,7 +1060,7 @@ struct SleepDashboardView: View {
                 score += 2 // Considerably below ideal range
             }
         }
-
+        
         // 4. REM Sleep Percentage (Target: 20-25%) - Lenient Scoring
         if let remSleepPercentage = Double(calculateSleepStagePercentage(stage: 4).replacingOccurrences(of: "%", with: "")) {
             if remSleepPercentage >= 20 && remSleepPercentage <= 25 {
@@ -1048,7 +1073,7 @@ struct SleepDashboardView: View {
                 score += 2 // Considerably below ideal range
             }
         }
-
+        
         // 5. Sleep Consistency (Target: 80%+) - Lenient Scoring
         if let sleepConsistencyValue = Double(sleepConsistency.replacingOccurrences(of: "%", with: "")) {
             if sleepConsistencyValue >= 80 {
@@ -1059,7 +1084,7 @@ struct SleepDashboardView: View {
                 score += 2
             }
         }
-
+        
         // 6. Heart Rate Dip (Target: 10%+) - Lenient Scoring
         if let heartRateDipValue = Double(heartRateDip.replacingOccurrences(of: "%", with: "")) {
             if heartRateDipValue >= 10 {
@@ -1068,7 +1093,7 @@ struct SleepDashboardView: View {
                 score += 2
             }
         }
-
+        
         // 7. Average Sleeping HRV (Example Thresholds) - Lenient Scoring
         if let averageSleepingHRVValue = Double(averageSleepingHRV.replacingOccurrences(of: " ms", with: "")) {
             if averageSleepingHRVValue > 50 {
@@ -1079,348 +1104,341 @@ struct SleepDashboardView: View {
                 score += 1
             }
         }
-
+        
         // 8. Number of Awakenings (Sleep Interruptions) - Reduced Penalty
         // Subtract 1 points for each awakening
         score = max(0, score - sleepInterruptions)
-
+        
         // Ensure the score doesn't exceed the maximum possible score
         sleepQualityScore = min(maxPossibleScore, score)
-    }}
-                    struct CircularProgressView: View {
-                        let percentage: CGFloat
-                        let title: String
-                        let value: String
-
-                        var body: some View {
-                            VStack {
-                                ZStack {
-                                    Circle()
-                                        .stroke(Color.gray.opacity(0.3), lineWidth: 10)
-                                    Circle()
-                                        .trim(from: 0, to: percentage)
-                                        .stroke(Color.green, lineWidth: 10)
-                                        .rotationEffect(.degrees(-90))
-                                    Text("\(Int(percentage * 100))%")
-                                        .font(.headline)
-                                        .foregroundColor(.white)
-                                }
-                                .frame(width: 100, height: 100)
-                                Text(title)
-                                    .font(.caption)
-                                    .multilineTextAlignment(.center)
-                                    .foregroundColor(.white)
-                                Text(value)
-                                    .font(.caption)
-                                    .foregroundColor(.gray)
-                            }
-                        }
+    }
+    struct CircularProgressView: View {
+        let percentage: CGFloat
+        let title: String
+        let value: String
+        
+        var body: some View {
+            VStack {
+                ZStack {
+                    Circle()
+                        .stroke(Color.gray.opacity(0.3), lineWidth: 10)
+                    Circle()
+                        .trim(from: 0, to: percentage)
+                        .stroke(Color.green, lineWidth: 10)
+                        .rotationEffect(.degrees(-90))
+                    Text("\(Int(percentage * 100))%")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                }
+                .frame(width: 100, height: 100)
+                Text(title)
+                    .font(.caption)
+                    .multilineTextAlignment(.center)
+                    .foregroundColor(.white)
+                Text(value)
+                    .font(.caption)
+                    .foregroundColor(.gray)
+            }
+        }
+    }
+    
+    struct StatView: View {
+        let title: String
+        let value: String
+        let percentage: String?
+        let description: String?
+        let icon: String?
+        
+        var body: some View {
+            VStack {
+                HStack {
+                    if let icon = icon {
+                        Image(systemName: icon)
+                            .font(.title3)
+                            .foregroundColor(.blue.opacity(0.8))
                     }
-
-                    struct StatView: View {
-                        let title: String
-                        let value: String
-                        let percentage: String?
-                        let description: String?
-                        let icon: String?
-
-                        var body: some View {
-                            VStack {
-                                HStack {
-                                    if let icon = icon {
-                                        Image(systemName: icon)
-                                            .font(.title3)
-                                            .foregroundColor(.blue.opacity(0.8))
-                                    }
-                                    Text(value)
-                                        .font(.title2)
-                                        .fontWeight(.bold)
-                                        .foregroundColor(.white)
-                                }
-                                if let percentage = percentage {
-                                    Text(percentage)
-                                        .font(.caption)
-                                        .foregroundColor(.gray)
-                                } else if let description = description {
-                                    Text(description)
-                                        .font(.caption)
-                                        .foregroundColor(.gray)
-                                }
-                                Text(title)
-                                    .font(.caption)
-                                    .multilineTextAlignment(.center)
-                                    .foregroundColor(.white)
-                            }
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                            .background(Color(UIColor.systemGray6))
-                            .cornerRadius(12)
-                        }
+                    Text(value)
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                }
+                if let percentage = percentage {
+                    Text(percentage)
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                } else if let description = description {
+                    Text(description)
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                }
+                Text(title)
+                    .font(.caption)
+                    .multilineTextAlignment(.center)
+                    .foregroundColor(.white)
+            }
+            .padding()
+            .frame(maxWidth: .infinity)
+            .background(Color(UIColor.systemGray6))
+            .cornerRadius(12)
+        }
+    }
+    
+    struct AreaChartView: View {
+        let sleepData: [SleepData]
+        
+        var body: some View {
+            Chart {
+                ForEach(sleepData, id: \.id) { dataPoint in
+                    AreaMark(
+                        x: .value("Time", formattedDate(from: dataPoint.date), unit: .hour),
+                        y: .value("Duration", dataPoint.duration / 60) // Convert seconds to minutes
+                    )
+                    .foregroundStyle(by: .value("Sleep Stage", dataPoint.sleepStageName))
+                }
+                // Ensure proper stacking by grouping y-values by sleep stage
+                .interpolationMethod(.catmullRom)
+            }
+            .chartForegroundStyleScale([
+                "Awake": .yellow,
+                "Light": .green.opacity(0.3),
+                "Deep": .blue.opacity(0.6),
+                "REM": .purple.opacity(0.7)
+            ])
+            .chartXAxis {
+                AxisMarks(values: .stride(by: .hour, count: 4)) { value in
+                    AxisGridLine()
+                    AxisTick()
+                    if let date = value.as(Date.self) {
+                        AxisValueLabel(formatTime(from: date))
                     }
-
-                    struct ChartView: View {
-                        let sleepData: [SleepData]
-
-                        var body: some View {
-                            VStack {
-                                Chart {
-                                    ForEach(sleepData, id: \.date) { dataPoint in
-                                        BarMark(
-                                            x: .value("Time", formatHour(dataPoint.hour)),
-                                            y: .value("Sleep Stage", dataPoint.sleepStage)
-                                        )
-                                        .foregroundStyle(colorForSleepStage(dataPoint.sleepStage))
-                                    }
-                                }
-                                HStack(spacing: 16) {
-                                    ForEach(sleepStages, id: \.stage) { sleepStage in
-                                        LegendItem(
-                                            color: colorForSleepStage(sleepStage.stage),
-                                            label: sleepStage.label
-                                        )
-                                    }
-                                }
-                                .padding(.top, 8)
-                            }
-                        }
-
-                        let sleepStages: [(stage: Int, label: String)] = [
-                            (0, "In Bed"),
-                            (1, "Awake"),
-                            (2, "Light"),
-                            (3, "Deep"),
-                            (4, "REM")
-                        ]
-
-                        func formatHour(_ hour: Int) -> String {
-                            let hourOfDay = hour % 24
-                            return "\(hourOfDay)\(hourOfDay < 12 ? "AM" : "PM")"
-                        }
-
-                        func colorForSleepStage(_ stage: Int) -> Color {
-                            switch stage {
-                            case 0: return .gray
-                            case 1: return .yellow
-                            case 2: return .green.opacity(0.3)
-                            case 3: return .blue.opacity(0.6)
-                            case 4: return .purple.opacity(0.7)
-                            default: return .gray
-                            }
-                        }
+                }
+            }
+            .chartYAxis {
+                AxisMarks(position: .leading)
+            }
+            .padding(.top, 8)
+            .chartLegend(position: .bottom)
+        }
+        
+        private func formattedDate(from date: Date) -> Date {
+            let calendar = Calendar.current
+            let hour = calendar.component(.hour, from: date)
+            
+            var dateComponents = DateComponents()
+            dateComponents.hour = hour
+            return calendar.date(from: dateComponents)!
+        }
+        
+        private func formatTime(from date: Date) -> String {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "h a"
+            formatter.amSymbol = "AM"
+            formatter.pmSymbol = "PM"
+            return formatter.string(from: date)
+        }
+    }
+    
+    struct HRVLineChartView: View {
+        let hrvData: [HRVData]
+        let sleepData: [SleepData]
+        
+        var body: some View {
+            Chart {
+                ForEach(filteredHRVData, id: \.date) { data in
+                    LineMark(
+                        x: .value("Time", data.date, unit: .minute),
+                        y: .value("HRV (ms)", data.value)
+                    )
+                    .foregroundStyle(Color.red)
+                    .symbol(Circle().strokeBorder(lineWidth: 2))
+                }
+                
+                RuleMark(y: .value("Average", filteredHRVData.isEmpty ? 0 : filteredHRVData.reduce(0) { $0 + $1.value } / Double(filteredHRVData.count)))
+                    .foregroundStyle(Color.gray)
+                    .lineStyle(StrokeStyle(dash: [5]))
+                    .annotation(position: .trailing, alignment: .center) {
+                        Text("AVG")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
-
-                    struct HRVLineChartView: View {
-                        let hrvData: [HRVData]
-                        let sleepData: [SleepData]
-
-                        var body: some View {
-                            Chart {
-                                ForEach(filteredHRVData, id: \.date) { data in
-                                    LineMark(
-                                        x: .value("Time", data.date, unit: .minute),
-                                        y: .value("HRV (ms)", data.value)
-                                    )
-                                    .foregroundStyle(Color.red)
-                                    .symbol(Circle().strokeBorder(lineWidth: 2))
-                                }
-
-                                RuleMark(y: .value("Average", filteredHRVData.isEmpty ? 0 : filteredHRVData.reduce(0) { $0 + $1.value } / Double(filteredHRVData.count)))
-                                    .foregroundStyle(Color.gray)
-                                    .lineStyle(StrokeStyle(dash: [5]))
-                                    .annotation(position: .trailing, alignment: .center) {
-                                        Text("AVG")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                }
-                            }
-                            .chartYAxis {
-                                AxisMarks(position: .leading)
-                            }
-                            .chartXAxis {
-                                AxisMarks(values: .stride(by: .hour, count: 1)) { value in
-                                    AxisGridLine()
-                                    AxisTick()
-                                    AxisValueLabel(format: .dateTime.hour(.defaultDigits(amPM: .abbreviated)).minute())
-                                }
-                            }
-                            .chartXScale(domain: xDomain)
-                        }
-
-                        // Filter HRV data based on sleep time
-                        private var filteredHRVData: [HRVData] {
-                            guard let sleepStart = sleepStartTime, let sleepEnd = sleepEndTime else {
-                                return []
-                            }
-
-                            return hrvData.filter { data in
-                                data.date >= sleepStart && data.date <= sleepEnd
-                            }
-                        }
-
-                        // Calculate the domain for the x-axis based on sleep times
-                        private var xDomain: ClosedRange<Date> {
-                            guard let sleepStart = sleepStartTime, let sleepEnd = sleepEndTime else {
-                                return Date()...Date()
-                            }
-                            return sleepStart...sleepEnd
-                        }
-
-                        // Correctly determine sleep start time
-                        private var sleepStartTime: Date? {
-                            sleepData.filter { $0.sleepStage != 1 } // Filter out "awake" periods
-                                .map { $0.date }                 // Extract the start dates
-                                .min()                          // Get the earliest start date
-                        }
-
-                        // Correctly determine sleep end time
-                        private var sleepEndTime: Date? {
-                            guard let sleepStart = sleepStartTime else { return nil }
-
-                            // Find the last sleep segment that isn't "awake"
-                            guard let lastSleepSegment = sleepData.filter({ $0.sleepStage != 1 }).max(by: { $0.date < $1.date }) else { return nil }
-
-                            let sleepEnd = sleepData
-                                .filter { $0.sleepStage != 1 && $0.date >= sleepStart } // Consider only sleep segments after sleepStart
-                                .map { $0.date.addingTimeInterval($0.duration) } // Calculate end time of each segment
-                                .max() // Get the latest end time
-
-                            // Return the end time of the last sleep segment, or the end of the last segment if somehow that is missing
-                            return sleepEnd ?? lastSleepSegment.date.addingTimeInterval(lastSleepSegment.duration)
-                        }
-                    }
-
-                    struct SleepTrend: Identifiable {
-                        let id = UUID()
-                        let day: String
-                        let totalSleepHours: Double
-                    }
-
-                    struct SleepStageDistributionView: View {
-                        let sleepData: [SleepData]
-
-                        var body: some View {
-                            Chart {
-                                ForEach(sleepStageDistribution, id: \.stage) { stage in
-                                    BarMark(
-                                        x: .value("Sleep Stage", stage.label),
-                                        y: .value("Duration (hrs)", stage.durationHours)
-                                    )
-                                    .foregroundStyle(colorForSleepStage(stage.stage))
-                                }
-                            }
-                            .chartYAxis {
-                                AxisMarks(position: .leading)
-                            }
-                            .chartXAxis {
-                                AxisMarks(position: .bottom)
-                            }
-                        }
-
-                        var sleepStageDistribution: [SleepStage] {
-                            let stages = [0, 1, 2, 3, 4]
-                            return stages.map { stage in
-                                let stageData = sleepData.filter { $0.sleepStage == stage }
-                                let totalSeconds = stageData.reduce(0) { $0 + $1.duration }
-                                let hours = totalSeconds / 3600
-                                let label: String
-                                switch stage {
-                                case 0: label = "In Bed"
-                                case 1: label = "Awake"
-                                case 2: label = "Light"
-                                case 3: label = "Deep"
-                                case 4: label = "REM"
-                                default: label = "Unknown"
-                                }
-                                return SleepStage(stage: stage, label: label, durationHours: hours)
-                            }
-                        }
-
-                        func colorForSleepStage(_ stage: Int) -> Color {
-                            switch stage {
-                            case 0: return .gray
-                            case 1: return .yellow
-                            case 2: return .green.opacity(0.3)
-                            case 3: return .blue.opacity(0.6)
-                            case 4: return .purple.opacity(0.7)
-                            default: return .gray
-                            }
-                        }
-                    }
-
-                    struct SleepStage: Identifiable {
-                        let id = UUID()
-                        let stage: Int
-                        let label: String
-                        let durationHours: Double
-                    }
-
-                    struct LegendItem: View {
-                        let color: Color
-                        let label: String
-
-                        var body: some View {
-                            HStack(spacing: 4) {
-                                Circle()
-                                    .fill(color)
-                                    .frame(width: 8, height: 8)
-                                Text(label)
-                                    .font(.caption)
-                                    .foregroundColor(.gray)
-                            }
-                        }
-                    }
-
-struct SleepData: Identifiable { // Add Identifiable conformance
-    let id = UUID() // Add an ID to conform to Identifiable
-    let date: Date
-    let hour: Int
-    let sleepStage: Int
-    let duration: TimeInterval
-}
-
-extension SleepData: Equatable {
-    static func == (lhs: SleepData, rhs: SleepData) -> Bool {
-        return lhs.id == rhs.id && // Or compare other relevant properties
-               lhs.date == rhs.date &&
-               lhs.hour == rhs.hour &&
-               lhs.sleepStage == rhs.sleepStage &&
-               lhs.duration == rhs.duration
+            }
+            .chartYAxis {
+                AxisMarks(position: .leading)
+            }
+            .chartXAxis {
+                AxisMarks(values: .stride(by: .hour, count: 1)) { value in
+                    AxisGridLine()
+                    AxisTick()
+                    AxisValueLabel(format: .dateTime.hour(.defaultDigits(amPM: .abbreviated)).minute())
+                }
+            }
+            .chartXScale(domain: xDomain)
+        }
+        
+        // Filter HRV data based on sleep time
+        private var filteredHRVData: [HRVData] {
+            guard let sleepStart = sleepStartTime, let sleepEnd = sleepEndTime else {
+                return []
+            }
+            
+            return hrvData.filter { data in
+                data.date >= sleepStart && data.date <= sleepEnd
+            }
+        }
+        
+        // Calculate the domain for the x-axis based on sleep times
+        private var xDomain: ClosedRange<Date> {
+            guard let sleepStart = sleepStartTime, let sleepEnd = sleepEndTime else {
+                return Date()...Date()
+            }
+            return sleepStart...sleepEnd
+        }
+        
+        // Correctly determine sleep start time
+        private var sleepStartTime: Date? {
+            sleepData.filter { $0.sleepStage != 1 } // Filter out "awake" periods
+                .map { $0.date }       // Extract the start dates
+                .min()                 // Get the earliest start date
+        }
+        
+        // Correctly determine sleep end time
+        private var sleepEndTime: Date? {
+            guard let sleepStart = sleepStartTime else { return nil }
+            
+            // Find the last sleep segment that isn't "awake"
+            guard let lastSleepSegment = sleepData.filter({ $0.sleepStage != 1 }).max(by: { $0.date < $1.date }) else { return nil }
+            
+            let sleepEnd = sleepData
+                .filter { $0.sleepStage != 1 && $0.date >= sleepStart } // Consider only sleep segments after sleepStart
+                .map { $0.date.addingTimeInterval($0.duration) } // Calculate end time of each segment
+                .max() // Get the latest end time
+            
+            // Return the end time of the last sleep segment, or the end of the last segment if somehow that is missing
+            return sleepEnd ?? lastSleepSegment.date.addingTimeInterval(lastSleepSegment.duration)
+        }
+    }
+    
+    struct SleepTrend: Identifiable {
+        let id = UUID()
+        let day: String
+        let totalSleepHours: Double
+    }
+    
+    struct SleepStageDistributionView: View {
+        let sleepData: [SleepData]
+        
+        var body: some View {
+            Chart {
+                ForEach(sleepStageDistribution, id: \.stage) { stage in
+                    BarMark(
+                        x: .value("Sleep Stage", stage.label),
+                        y: .value("Duration (hrs)", stage.durationHours)
+                    )
+                    .foregroundStyle(colorForSleepStage(stage.stage))
+                }
+            }
+            .chartYAxis {
+                AxisMarks(position: .leading)
+            }
+            .chartXAxis {
+                AxisMarks(position: .bottom)
+            }
+        }
+        
+        var sleepStageDistribution: [SleepStage] {
+            let stages = [1, 2, 3, 4]
+            return stages.map { stage in
+                let stageData = sleepData.filter { $0.sleepStage == stage }
+                let totalSeconds = stageData.reduce(0) { $0 + $1.duration }
+                let hours = totalSeconds / 3600
+                let label: String
+                switch stage {
+                    //                case 0: label = "In Bed"
+                case 1: label = "Awake"
+                case 2: label = "Light"
+                case 3: label = "Deep"
+                case 4: label = "REM"
+                default: label = "Unknown"
+                }
+                return SleepStage(stage: stage, label: label, durationHours: hours)
+            }
+        }
+        
+        func colorForSleepStage(_ stage: Int) -> Color {
+            switch stage {
+            case 0: return .gray
+            case 1: return .yellow
+            case 2: return .green.opacity(0.3)
+            case 3: return .blue.opacity(0.6)
+            case 4: return .purple.opacity(0.7)
+            default: return .gray
+            }
+        }
+    }
+    
+    struct SleepStage: Identifiable {
+        let id = UUID()
+        let stage: Int
+        let label: String
+        let durationHours: Double
+    }
+    
+    struct LegendItem: View {
+        let color: Color
+        let label: String
+        
+        var body: some View {
+            HStack(spacing: 4) {
+                Circle()
+                    .fill(color)
+                    .frame(width: 8, height: 8)
+                Text(label)
+                    .font(.caption)
+                    .foregroundColor(.gray)
+            }
+        }
+    }
+    
+    struct SleepData: Identifiable, Equatable { // Add Equatable conformance
+        let id = UUID()
+        let date: Date
+        let hour: Int
+        let sleepStage: Int
+        let duration: TimeInterval
+        
+        var sleepStageName: String {
+            switch sleepStage {
+            case 0: return "In Bed"
+            case 1: return "Awake"
+            case 2: return "Light"
+            case 3: return "Deep"
+            case 4: return "REM"
+            default: return "Unknown"
+            }
+        }
+    }
+    
+    struct HRVData {
+        let date: Date
+        let value: Double
+    }
+    
+    struct PopoverTextView: View {
+        let title: String
+        let content: String
+        
+        var body: some View {
+            VStack {
+                Text(title)
+                    .font(.headline)
+                    .padding(.bottom, 4)
+                Text(content)
+                    .font(.body)
+            }
+            .padding()
+            .background(Color(UIColor.systemGray5))
+            .cornerRadius(10)
+            .shadow(radius: 5)
+        }
     }
 }
-
-                    struct HRVData {
-                        let date: Date
-                        let value: Double
-                    }
-
-                    struct PopoverTextView: View {
-                        let title: String
-                        let content: String
-
-                        var body: some View {
-                            VStack {
-                                Text(title)
-                                    .font(.headline)
-                                    .padding(.bottom, 4)
-                                Text(content)
-                                    .font(.body)
-                            }
-                            .padding()
-                            .background(Color(UIColor.systemGray5))
-                            .cornerRadius(10)
-                            .shadow(radius: 5)
-                        }
-                    }
-
-                    #Preview {
-                        SleepDashboardView()
-                    }
-
-                    // Helper extension to convert HKData to local time zone
-                    extension Date {
-                        func toLocalTime() -> Date {
-                            let timeZone = TimeZone.current
-                            let seconds = TimeInterval(timeZone.secondsFromGMT(for: self))
-                            return Date(timeInterval: seconds, since: self)
-                        }
-                    }
