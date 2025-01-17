@@ -17,17 +17,22 @@ class SleepNotificationManager: NSObject, UNUserNotificationCenterDelegate {
     }
 
     func calculateAndSendSleepQualityNotification(for sleepData: [SleepData], score: Int) {
+        print("calculateAndSendSleepQualityNotification called")
+        print("Sleep Data: \(sleepData)")
+        print("Sleep Quality Score: \(score)")
         scheduleNotification(with: score)
     }
 
+
     private func scheduleNotification(with score: Int) {
         let content = UNMutableNotificationContent()
+        print("Scheduling notification with score: \(score)")
         content.title = "Your Sleep Quality Score"
         content.body = "Last night's sleep quality score is \(score) out of 100."
         content.sound = UNNotificationSound.default
 
         // Trigger after a time interval (e.g., 5 seconds from now for testing)
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false)
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 2, repeats: false)
 
         let request = UNNotificationRequest(identifier: "sleepQualityNotification", content: content, trigger: trigger)
 

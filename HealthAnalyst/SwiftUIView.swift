@@ -65,11 +65,26 @@ struct SleepDashboardView: View {
     @State private var averageSleepingBloodOxygen: String = "N/A"
     @State private var averageRespiratoryRate: String = "N/A"
     @State private var sleepQualityScore: Int?
+    @State private var notificationManager: SleepNotificationManager
+
     
     let columns = [
         GridItem(.flexible()),
         GridItem(.flexible())
     ]
+    
+    init() {
+           // Initialize healthStore
+           let healthStore = HKHealthStore.isHealthDataAvailable() ? HKHealthStore() : nil
+           _healthStore = State(initialValue: healthStore)
+
+           // Initialize notificationManager, passing in healthStore
+           _notificationManager = State(initialValue: SleepNotificationManager(healthStore: healthStore))
+
+           // Other initializations
+           _selectedDate = State(initialValue: Date())
+           _sleepData = State(initialValue: [])
+       }
     
     var body: some View {
         NavigationView {
@@ -395,6 +410,7 @@ struct SleepDashboardView: View {
             .preferredColorScheme(.dark)
             .onAppear {
                 checkHealthKitAuthorization()
+                notificationManager.requestNotificationPermissions()
             }
             .onChange(of: sleepData) { _ in
                 calculateSleepQualityScore()
@@ -1017,8 +1033,10 @@ struct SleepDashboardView: View {
                         return
                     }
                     
+                    
                     var score = 0
                     let maxPossibleScore = 100
+                    
                     
                     // 1. Total Sleep Duration (Target: 7-9 hours) - Lenient Scoring
                     let totalSleepSeconds = sleepData.filter { [2, 3, 4].contains($0.sleepStage) }.reduce(0) { $0 + $1.duration }
@@ -1112,6 +1130,8 @@ struct SleepDashboardView: View {
                     
                     // Ensure the score doesn't exceed the maximum possible score
                     sleepQualityScore = min(maxPossibleScore, score)
+                    
+                    
                 }
                 struct CircularProgressView: View {
                     let percentage: CGFloat

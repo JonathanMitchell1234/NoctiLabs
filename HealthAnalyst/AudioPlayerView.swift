@@ -84,8 +84,12 @@ struct AudioPlayerView: View {
             }
         }
         .padding(.horizontal)
-        .padding(.vertical, 8)
-        .background(Color(uiColor: .systemGray6))
+        .padding(.vertical, 6)
+        .background(
+                RoundedRectangle(cornerRadius: 12) // Adjust the corner radius as needed
+                    .fill(Color(uiColor: .systemGray6)) // Ensure the background color matches the original
+            )
+        .padding(.horizontal, 14)
         .onTapGesture {
             withAnimation(.spring()) {
                 isExpanded = true
