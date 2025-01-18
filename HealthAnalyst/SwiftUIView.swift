@@ -533,10 +533,10 @@ struct SleepDashboardView: View {
                             
                             print("Sleep sample: \(sample), sleepStage: \(sleepStage), localStartDate: \(localStartDate), localEndDate: \(localEndDate)")
                             return SleepData(
-                                date: localStartDate,// Use localStartDate
-                                hour: Calendar.current.component(.hour, from: localStartDate), // Use localStartDate
+                                date: sample.startDate,
+                                hour: Calendar.current.component(.hour, from: sample.startDate),
                                 sleepStage: sleepStage,
-                                duration: localEndDate.timeIntervalSince(localStartDate) // Use localStartDate and localEndDate
+                                duration: localEndDate.timeIntervalSince(localStartDate)
                             )
                         }
                         
@@ -1280,6 +1280,7 @@ struct SleepDashboardView: View {
         private func formatTime(from date: Date) -> String {
             let formatter = DateFormatter()
             formatter.dateFormat = "h a"
+            formatter.timeZone = .current
             formatter.amSymbol = "AM"
             formatter.pmSymbol = "PM"
             return formatter.string(from: date)
