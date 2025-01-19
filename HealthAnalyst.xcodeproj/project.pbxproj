@@ -30,7 +30,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		AB1D9BCA2D337BD4003BEC31 /* Exceptions for "HealthAnalyst" folder in "HealthAnalyst" target */ = {
+		AB64FFDA2D3DBEDD00C88CD6 /* Exceptions for "HealthAnalyst" folder in "HealthAnalyst" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -43,7 +43,7 @@
 		AB1D9B952D32FB40003BEC31 /* HealthAnalyst */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				AB1D9BCA2D337BD4003BEC31 /* Exceptions for "HealthAnalyst" folder in "HealthAnalyst" target */,
+				AB64FFDA2D3DBEDD00C88CD6 /* Exceptions for "HealthAnalyst" folder in "HealthAnalyst" target */,
 			);
 			path = HealthAnalyst;
 			sourceTree = "<group>";
