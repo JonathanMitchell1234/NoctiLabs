@@ -3,15 +3,6 @@ import HealthKit
 import SwiftUI
 
 // MARK: - Extensions
-
-extension SleepData: Equatable {
-    static func == (lhs: SleepData, rhs: SleepData) -> Bool {
-        return lhs.id == rhs.id
-            && lhs.date == rhs.date && lhs.hour == rhs.hour && lhs.sleepStage == rhs.sleepStage
-            && lhs.duration == rhs.duration
-    }
-}
-
 extension Date {
     func toLocalTime() -> Date {
         let timeZone = TimeZone.current
@@ -20,53 +11,11 @@ extension Date {
     }
 }
 
-// MARK: - SleepData Struct
-
-struct SleepData: Identifiable {
-    let id = UUID()
-    let date: Date
-    let hour: Int
-    let sleepStage: Int
-    let duration: TimeInterval
-
-    var sleepStageName: String {
-        switch sleepStage {
-        case 0: return "In Bed"
-        case 1: return "Awake"
-        case 2: return "Light"
-        case 3: return "Deep"
-        case 4: return "REM"
-        default: return "Unknown"
-        }
-    }
-}
-
 // MARK: - HRVData Struct
 struct HRVData {
     let date: Date
     let value: Double
 }
-
-// MARK: - SleepNotificationManager
-//class SleepNotificationManager: NSObject, UNUserNotificationCenterDelegate {
-//    let healthStore: HKHealthStore?
-//
-//    init(healthStore: HKHealthStore?) {
-//        self.healthStore = healthStore
-//        super.init()
-//    }
-//
-//    func requestNotificationPermissions() {
-//        let center = UNUserNotificationCenter.current()
-//        center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-//            if granted {
-//                print("Notification permissions granted.")
-//            } else {
-//                print("Notification permissions denied.")
-//            }
-//        }
-//    }
-//}
 
 // MARK: - SleepDashboardView Struct
 
@@ -92,12 +41,10 @@ struct SleepDashboardView: View {
     @State private var averageSleepingBloodOxygen: String = "N/A"
     @State private var averageRespiratoryRate: String = "N/A"
     @State private var sleepQualityScore: Int?
-    
     @State private var restingHeartRate: String = "N/A"
     @State private var sleepDebt: String = "N/A"
     @State private var sleepRegularity: String = "N/A"
     @State private var socialJetLag: String = "N/A"
-    
     @State private var deepSleepPopover = false
     @State private var remSleepPopover = false
     @State private var lightSleepPopover = false
@@ -113,7 +60,6 @@ struct SleepDashboardView: View {
     @State private var averageSleepingHRVPopover = false
     @State private var averageSleepingBloodOxygenPopover = false
     @State private var averageRestingHeartRate: String = "N/A"
-    
     private var notificationManager: SleepNotificationManager
     
     let columns = [
@@ -558,6 +504,7 @@ struct SleepDashboardView: View {
         guard HKHealthStore.isHealthDataAvailable() else {
             return
         }
+        
         healthStore = HKHealthStore()
         let sleepType = HKObjectType.categoryType(forIdentifier: .sleepAnalysis)!
         let heartRateType = HKObjectType.quantityType(forIdentifier: .heartRate)!
@@ -1300,6 +1247,7 @@ struct SleepDashboardView: View {
         sleepQualityScore = min(maxPossibleScore, score)
         
     }
+    
     struct CircularProgressView: View {
         let percentage: CGFloat
         let title: String
@@ -1371,190 +1319,6 @@ struct SleepDashboardView: View {
         }
     }
     
-    struct AreaChartView: View {
-        let sleepData: [SleepData]
-        
-        private var startOfDay: Date {
-            guard let firstDataPoint = sleepData.first else {
-                return Calendar.current.startOfDay(for: Date())
-            }
-            return Calendar.current.startOfDay(for: firstDataPoint.date)
-        }
-        
-        private var endOfDay: Date {
-            return Calendar.current.date(byAdding: .day, value: 1, to: startOfDay)!
-        }
-        
-        private var next12Hours: [Date] {
-            guard let firstDataPoint = sleepData.first else {
-                return []
-            }
-            let calendar = Calendar.current
-            let startHour = calendar.component(.hour, from: firstDataPoint.date)
-            let start = calendar.date(
-                bySettingHour: startHour, minute: 0, second: 0, of: firstDataPoint.date)!
-            var dates: [Date] = []
-            for i in 0..<6 {
-                if let date = calendar.date(byAdding: .hour, value: 2 * i, to: start) {
-                    dates.append(date)
-                }
-            }
-            return dates
-        }
-        
-        var body: some View {
-            Chart {
-                ForEach(sleepData, id: \.id) { dataPoint in
-                    AreaMark(
-                        x: .value("Time", dataPoint.date, unit: .hour),
-                        yStart: .value(
-                            "Min Duration",
-                            dataPoint.sleepStage == 1 ? 0 : minDuration(for: dataPoint)),
-                        yEnd: .value("Max Duration", maxDuration(for: dataPoint))
-                    )
-                    .foregroundStyle(by: .value("Sleep Stage", dataPoint.sleepStageName))
-                }
-                .interpolationMethod(.catmullRom)
-            }
-            .chartForegroundStyleScale([
-                "Awake": .yellow,
-                "Light": .green.opacity(0.4),
-                "Deep": .blue.opacity(0.7),
-                "REM": .purple.opacity(0.8),
-                "In Bed": .gray.opacity(0.2),
-            ])
-            .chartXAxis {
-                AxisMarks(values: next12Hours) { value in
-                    AxisGridLine()
-                    AxisTick()
-                    if let date = value.as(Date.self) {
-                        AxisValueLabel(formatTime(from: date))
-                    }
-                }
-            }
-            .chartYAxis {
-                AxisMarks(position: .leading) { mark in
-                    AxisValueLabel()
-                    AxisGridLine()
-                }
-            }
-            .chartYScale(domain: 0...maxDuration())
-            .padding(.top, 8)
-            .chartLegend(position: .bottom)
-        }
-        
-        private func formatTime(from date: Date) -> String {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "h a"
-            formatter.timeZone = .current
-            formatter.amSymbol = "AM"
-            formatter.pmSymbol = "PM"
-            return formatter.string(from: date)
-        }
-        
-        private func minDuration(for dataPoint: SleepData) -> Double {
-            return 0
-        }
-        
-        private func maxDuration(for dataPoint: SleepData) -> Double {
-            return dataPoint.duration / 60
-        }
-        
-        private func maxDuration() -> Double {
-            guard let maxDataPoint = sleepData.max(by: { $0.duration < $1.duration }) else {
-                return 1.0
-            }
-            return maxDataPoint.duration / 60
-        }
-    }
-    
-    struct HRVLineChartView: View {
-        let hrvData: [HRVData]
-        let sleepData: [SleepData]
-        
-        var body: some View {
-            Chart {
-                ForEach(filteredHRVData, id: \.date) { data in
-                    LineMark(
-                        x: .value("Time", data.date, unit: .minute),
-                        y: .value("HRV (ms)", data.value)
-                    )
-                    .foregroundStyle(Color.red)
-                    .symbol(Circle().strokeBorder(lineWidth: 2))
-                }
-                
-                RuleMark(
-                    y: .value(
-                        "Average",
-                        filteredHRVData.isEmpty
-                        ? 0
-                        : filteredHRVData.reduce(0) { $0 + $1.value }
-                        / Double(filteredHRVData.count))
-                )
-                .foregroundStyle(Color.gray)
-                .lineStyle(StrokeStyle(dash: [5]))
-                .annotation(position: .trailing, alignment: .center) {
-                    Text("AVG")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .chartYAxis {
-                AxisMarks(position: .leading)
-            }
-            .chartXAxis {
-                AxisMarks(values: .stride(by: .hour, count: 1)) { value in
-                    AxisGridLine()
-                    AxisTick()
-                    AxisValueLabel(
-                        format: .dateTime.hour(.defaultDigits(amPM: .abbreviated)).minute())
-                }
-            }
-            .chartXScale(domain: xDomain)
-        }
-        
-        private var filteredHRVData: [HRVData] {
-            guard let sleepStart = sleepStartTime, let sleepEnd = sleepEndTime else {
-                return []
-            }
-            
-            return hrvData.filter { data in
-                data.date >= sleepStart && data.date <= sleepEnd
-            }
-        }
-        
-        private var xDomain: ClosedRange<Date> {
-            guard let sleepStart = sleepStartTime, let sleepEnd = sleepEndTime else {
-                return Date()...Date()
-            }
-            return sleepStart...sleepEnd
-        }
-        
-        private var sleepStartTime: Date? {
-            sleepData.filter { $0.sleepStage != 1 }
-                .map { $0.date }
-                .min()
-        }
-        
-        private var sleepEndTime: Date? {
-            guard let sleepStart = sleepStartTime else { return nil }
-            
-            guard
-                let lastSleepSegment = sleepData.filter({ $0.sleepStage != 1 }).max(by: {
-                    $0.date < $1.date
-                })
-            else { return nil }
-            
-            let sleepEnd =
-            sleepData
-                .filter { $0.sleepStage != 1 && $0.date >= sleepStart }
-                .map { $0.date.addingTimeInterval($0.duration) }
-                .max()
-            
-            return sleepEnd ?? lastSleepSegment.date.addingTimeInterval(lastSleepSegment.duration)
-        }
-    }
-    
     struct SleepTrend: Identifiable {
         let id = UUID()
         let day: String
@@ -1609,48 +1373,6 @@ struct SleepDashboardView: View {
             case 4: return .purple.opacity(0.7)
             default: return .gray
             }
-        }
-    }
-    
-    struct SleepStage: Identifiable {
-        let id = UUID()
-        let stage: Int
-        let label: String
-        let durationHours: Double
-    }
-    
-    struct LegendItem: View {
-        let color: Color
-        let label: String
-        
-        var body: some View {
-            HStack(spacing: 4) {
-                Circle()
-                    .fill(color)
-                    .frame(width: 8, height: 8)
-                Text(label)
-                    .font(.caption)
-                    .foregroundColor(.gray)
-            }
-        }
-    }
-    
-    struct PopoverTextView: View {
-        let title: String
-        let content: String
-        
-        var body: some View {
-            VStack {
-                Text(title)
-                    .font(.headline)
-                    .padding(.bottom, 4)
-                Text(content)
-                    .font(.body)
-            }
-            .padding()
-            .background(Color(UIColor.systemGray5))
-            .cornerRadius(10)
-            .shadow(radius: 5)
         }
     }
     
@@ -1757,10 +1479,7 @@ struct SleepDashboardView: View {
                 }
             }
             
-            let sri =
-            totalComparisons > 0
-            ? Double(agreementCount) / Double(totalComparisons) * 100 : 0
-            
+            let sri = totalComparisons > 0 ? Double(agreementCount) / Double(totalComparisons) * 100 : 0
             DispatchQueue.main.async {
                 self.sleepRegularity = String(format: "%.1f%%", sri)
             }
@@ -1797,7 +1516,6 @@ struct SleepDashboardView: View {
                     }
                 }
             }
-            
             let weekdayAvg =
             weekdayMidpoints.isEmpty
             ? 0 : weekdayMidpoints.reduce(0, +) / Double(weekdayMidpoints.count)
@@ -1825,14 +1543,11 @@ struct SleepDashboardView: View {
         let endOfDay = Calendar.current.date(byAdding: .day, value: 1, to: startOfDay)!
         let predicate = HKQuery.predicateForSamples(
             withStart: startOfDay, end: endOfDay, options: .strictStartDate)
-
-        // Sort by date to get the most recent sample first
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
-
         let query = HKSampleQuery(
             sampleType: restingHeartRateType,
             predicate: predicate,
-            limit: HKObjectQueryNoLimit, // Fetch all samples for the day
+            limit: HKObjectQueryNoLimit,
             sortDescriptors: [sortDescriptor]
         ) { _, samples, error in
             DispatchQueue.main.async {
@@ -1863,9 +1578,11 @@ struct SleepDashboardView: View {
 
         healthStore.execute(query)
     }
+    }
+
     private func calculateAverage(values: [Double]) -> Double? {
         guard !values.isEmpty else { return nil }
         let sum = values.reduce(0, +)
         return sum / Double(values.count)
     }
-}
+
