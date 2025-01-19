@@ -30,11 +30,17 @@ class SleepNotificationManager: NSObject, UNUserNotificationCenterDelegate {
         content.title = "Your Sleep Quality Score"
         content.body = "Last night's sleep quality score is \(score) out of 100."
         content.sound = UNNotificationSound.default
+        content.categoryIdentifier = "sleepQualityCategory"
 
-        // Trigger after a time interval (e.g., 5 seconds from now for testing)
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 2, repeats: false)
+        // Schedule the notification for 12:44 AM
+        var dateComponents = DateComponents()
+        dateComponents.hour = 13
+        dateComponents.minute = 0
+        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
 
         let request = UNNotificationRequest(identifier: "sleepQualityNotification", content: content, trigger: trigger)
+
+        //        print("Notification request: \(request)")
 
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
@@ -61,6 +67,7 @@ class SleepNotificationManager: NSObject, UNUserNotificationCenterDelegate {
                                 withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         completionHandler([.banner, .sound])
     }
+
 
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 didReceive response: UNNotificationResponse,

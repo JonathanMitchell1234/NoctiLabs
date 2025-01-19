@@ -23,10 +23,16 @@ struct HealthAnalystApp: App {
         }
     }()
 
+    private let sleepNotificationManager = SleepNotificationManager(healthStore: nil)
+
+    init() {
+        sleepNotificationManager.requestNotificationPermissions()
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .modelContainer(sharedModelContainer)
         }
-        .modelContainer(sharedModelContainer)
     }
 }

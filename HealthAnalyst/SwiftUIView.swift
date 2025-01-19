@@ -71,6 +71,7 @@ struct SleepDashboardView: View {
         let healthStore = HKHealthStore.isHealthDataAvailable() ? HKHealthStore() : nil
         _healthStore = State(initialValue: healthStore)
         notificationManager = SleepNotificationManager(healthStore: healthStore)
+        notificationManager.requestNotificationPermissions()
         _selectedDate = State(initialValue: Date())
         _sleepData = State(initialValue: [])
     }
@@ -483,8 +484,8 @@ struct SleepDashboardView: View {
             .preferredColorScheme(.dark)
             .onAppear {
                 checkHealthKitAuthorization()
-                notificationManager.requestNotificationPermissions()
             }
+            
             .onChange(of: sleepData) { _ in
                 calculateSleepQualityScore()
             }
@@ -1245,7 +1246,7 @@ struct SleepDashboardView: View {
         }
         score = max(0, score - sleepInterruptions)
         sleepQualityScore = min(maxPossibleScore, score)
-        
+        notificationManager.calculateAndSendSleepQualityNotification(for: sleepData, score: sleepQualityScore ?? 0)
     }
         
     struct SleepTrend: Identifiable {
@@ -1463,4 +1464,3 @@ struct SleepDashboardView: View {
         let sum = values.reduce(0, +)
         return sum / Double(values.count)
     }
-

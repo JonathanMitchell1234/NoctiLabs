@@ -1,9 +1,3 @@
-//
-//  HRVLineChartView.swift
-//  HealthAnalyst
-//
-//  Created by Jonathan Mitchell on 1/18/25.
-//
 import SwiftUI
 import Charts
 
@@ -12,44 +6,50 @@ struct HRVLineChartView: View {
     let sleepData: [SleepData]
     
     var body: some View {
-        Chart {
-            ForEach(filteredHRVData, id: \.date) { data in
-                LineMark(
-                    x: .value("Time", data.date, unit: .minute),
-                    y: .value("HRV (ms)", data.value)
+        // Use GeometryReader to adjust the height of the chart based on its parent container
+        GeometryReader { geometry in
+            Chart {
+                ForEach(filteredHRVData, id: \.date) { data in
+                    LineMark(
+                        x: .value("Time", data.date, unit: .minute),
+                        y: .value("HRV (ms)", data.value)
+                    )
+                    .foregroundStyle(Color.red)
+                    .symbol(Circle().strokeBorder(lineWidth: 2))
+                }
+                
+                RuleMark(
+                    y: .value(
+                        "Average",
+                        filteredHRVData.isEmpty
+                        ? 0
+                        : filteredHRVData.reduce(0) { $0 + $1.value }
+                        / Double(filteredHRVData.count))
                 )
-                .foregroundStyle(Color.red)
-                .symbol(Circle().strokeBorder(lineWidth: 2))
+                .foregroundStyle(Color.gray)
+                .lineStyle(StrokeStyle(dash: [5]))
+                .annotation(position: .trailing, alignment: .center) {
+                    Text("AVG")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
-            
-            RuleMark(
-                y: .value(
-                    "Average",
-                    filteredHRVData.isEmpty
-                    ? 0
-                    : filteredHRVData.reduce(0) { $0 + $1.value }
-                    / Double(filteredHRVData.count))
-            )
-            .foregroundStyle(Color.gray)
-            .lineStyle(StrokeStyle(dash: [5]))
-            .annotation(position: .trailing, alignment: .center) {
-                Text("AVG")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            .chartYAxis {
+                AxisMarks(position: .leading)
             }
-        }
-        .chartYAxis {
-            AxisMarks(position: .leading)
-        }
-        .chartXAxis {
-            AxisMarks(values: .stride(by: .hour, count: 1)) { value in
-                AxisGridLine()
-                AxisTick()
-                AxisValueLabel(
-                    format: .dateTime.hour(.defaultDigits(amPM: .abbreviated)).minute())
+            .chartXAxis {
+                AxisMarks(values: filteredHRVData.map { $0.date }) { value in
+                    AxisGridLine()
+                    AxisTick()
+                    AxisValueLabel(
+                        format: .dateTime.hour(.defaultDigits(amPM: .abbreviated)).minute())
+                }
             }
+            .chartXScale(domain: xDomain)
+            .frame(height: geometry.size.height) // Adjust the height to fill the container
+            .padding(.top, 8)
+            .padding(.horizontal, 15)// Optional: padding for top if needed
         }
-        .chartXScale(domain: xDomain)
     }
     
     private var filteredHRVData: [HRVData] {
@@ -93,3 +93,4 @@ struct HRVLineChartView: View {
         return sleepEnd ?? lastSleepSegment.date.addingTimeInterval(lastSleepSegment.duration)
     }
 }
+
