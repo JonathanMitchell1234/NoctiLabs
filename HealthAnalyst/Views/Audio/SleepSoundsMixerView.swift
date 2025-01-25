@@ -66,7 +66,7 @@ struct SleepSoundsMixerView: View {
                     }
                 }) {
                     Image(systemName: "chevron.down")
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.system(size: 22, weight: .medium))
                         .foregroundColor(.primary)
                         .padding()
                 }

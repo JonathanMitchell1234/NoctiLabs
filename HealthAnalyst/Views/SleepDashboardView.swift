@@ -478,11 +478,8 @@ struct SleepDashboardView: View {
                     .frame(maxWidth: .infinity)
                 }
                 .padding()
+                SleepJournalView()
                 SleepSoundsMixerView()
-//                                       .padding()
-//                                       .background(Color(UIColor.systemGray6))
-//                                       .cornerRadius(12)
-//                                       .padding(.horizontal)
                 AudioPlayerView()
             }
             .navigationTitle("Sleep Dashboard")
