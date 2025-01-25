@@ -53,16 +53,6 @@ struct SleepJournalView: View {
             VStack(alignment: .leading) {
                 Text("Sleep Journal")
                     .font(.headline)
-//                if let latestEntry = entries.first {
-//                    Text(latestEntry.text)
-//                        .font(.subheadline)
-//                        .lineLimit(1)
-//                        .foregroundColor(.secondary)
-//                } else {
-//                    Text("No entries yet")
-//                        .font(.subheadline)
-//                        .foregroundColor(.secondary)
-//                }
             }
             
             Spacer()
@@ -130,30 +120,18 @@ struct SleepJournalView: View {
                 ScrollView {
                     VStack(spacing: 16) {
                         ForEach(entries) { entry in
-                            VStack(alignment: .leading, spacing: 8) {
-                                HStack {
-                                    Text(entry.date, style: .date)
-                                        .font(.caption)
-                                        .foregroundColor(.gray)
-                                    Spacer()
-                                    Button {
-                                        editingEntry = entry
-                                        newEntryText = entry.text
-                                        showingEditor = true
-                                    } label: {
-                                        Image(systemName: "pencil")
-                                            .foregroundColor(.blue)
+                            JournalEntryView(
+                                entry: entry,
+                                onDelete: {
+                                    if let index = entries.firstIndex(where: { $0.id == entry.id }) {
+                                        deleteEntry(at: IndexSet(integer: index))
                                     }
+                                },
+                                onEdit: {
+                                    editingEntry = entry
+                                    newEntryText = entry.text
+                                    showingEditor = true
                                 }
-                                
-                                Text(entry.text)
-                                    .font(.body)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                            .padding()
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color(uiColor: .systemGray5))
                             )
                         }
                     }
@@ -167,6 +145,7 @@ struct SleepJournalView: View {
         .background(Color(uiColor: .systemGray6))
         .cornerRadius(20)
         .padding(.horizontal)
+        .padding(.bottom)
     }
     
     // MARK: Journal Persistence
@@ -203,6 +182,91 @@ struct SleepJournalView: View {
         if let encoded = try? JSONEncoder().encode(entries) {
             UserDefaults.standard.set(encoded, forKey: "sleepJournalEntries")
         }
+    }
+}
+
+struct JournalEntryView: View {
+    let entry: JournalEntry
+    var onDelete: () -> Void
+    var onEdit: () -> Void
+    
+    @State private var offset = CGSize.zero
+    @State private var initialOffset = CGSize.zero
+    
+    var body: some View {
+        ZStack {
+            HStack {
+                Spacer()
+                deleteButton
+            }
+            
+            content
+                .offset(x: offset.width)
+                .gesture(dragGesture)
+        }
+    }
+    
+    private var content: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(entry.date, style: .date)
+                    .font(.caption)
+                    .foregroundColor(.gray)
+                Spacer()
+                
+                Button(action: onEdit) {
+                    Image(systemName: "pencil")
+                        .foregroundColor(.blue)
+                }
+            }
+            
+            Text(entry.text)
+                .font(.body)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding()
+        .background(Color(uiColor: .systemGray5))
+        .cornerRadius(12)
+    }
+    
+    private var deleteButton: some View {
+        Button(action: {
+            withAnimation {
+                offset = CGSize(width: -UIScreen.main.bounds.width, height: 0)
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                onDelete()
+            }
+        }) {
+            Image(systemName: "trash")
+                .foregroundColor(.white)
+                .padding()
+                .background(Color.red)
+                .cornerRadius(12)
+        }
+        .padding(.trailing, 20)
+    }
+    
+    private var dragGesture: some Gesture {
+        DragGesture()
+            .onChanged { gesture in
+                if gesture.translation.width < 0 {
+                    offset = CGSize(width: gesture.translation.width + initialOffset.width, height: 0)
+                }
+            }
+            .onEnded { gesture in
+                withAnimation(.interactiveSpring()) {
+                    if gesture.translation.width < -100 {
+                        offset = CGSize(width: -UIScreen.main.bounds.width, height: 0)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                            onDelete()
+                        }
+                    } else {
+                        offset = .zero
+                    }
+                    initialOffset = offset
+                }
+            }
     }
 }
 
