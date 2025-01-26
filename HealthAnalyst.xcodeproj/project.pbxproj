@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		AB64001E2D45E66C00C88CD6 /* NoctiLabs Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = AB64FFFB2D45E66A00C88CD6 /* NoctiLabs Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		AB1D9BA62D32FB41003BEC31 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -21,12 +25,50 @@
 			remoteGlobalIDString = AB1D9B922D32FB40003BEC31;
 			remoteInfo = HealthAnalyst;
 		};
+		AB64000B2D45E66C00C88CD6 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AB1D9B8B2D32FB40003BEC31 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AB64FFFA2D45E66A00C88CD6;
+			remoteInfo = "NoctiLabs Watch App";
+		};
+		AB6400152D45E66C00C88CD6 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AB1D9B8B2D32FB40003BEC31 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AB64FFFA2D45E66A00C88CD6;
+			remoteInfo = "NoctiLabs Watch App";
+		};
+		AB64001C2D45E66C00C88CD6 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AB1D9B8B2D32FB40003BEC31 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AB64FFFA2D45E66A00C88CD6;
+			remoteInfo = "NoctiLabs Watch App";
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		AB6400222D45E66C00C88CD6 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				AB64001E2D45E66C00C88CD6 /* NoctiLabs Watch App.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		AB1D9B932D32FB40003BEC31 /* HealthAnalyst.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HealthAnalyst.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB1D9BA52D32FB41003BEC31 /* HealthAnalystTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HealthAnalystTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB1D9BAF2D32FB41003BEC31 /* HealthAnalystUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HealthAnalystUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		AB64000A2D45E66C00C88CD6 /* NoctiLabs Watch AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "NoctiLabs Watch AppTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		AB6400142D45E66C00C88CD6 /* NoctiLabs Watch AppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "NoctiLabs Watch AppUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		AB64FFFB2D45E66A00C88CD6 /* NoctiLabs Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "NoctiLabs Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -58,6 +100,21 @@
 			path = HealthAnalystUITests;
 			sourceTree = "<group>";
 		};
+		AB64000D2D45E66C00C88CD6 /* NoctiLabs Watch AppTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "NoctiLabs Watch AppTests";
+			sourceTree = "<group>";
+		};
+		AB6400172D45E66C00C88CD6 /* NoctiLabs Watch AppUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "NoctiLabs Watch AppUITests";
+			sourceTree = "<group>";
+		};
+		AB64FFFC2D45E66A00C88CD6 /* NoctiLabs Watch App */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "NoctiLabs Watch App";
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -82,6 +139,27 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AB6400072D45E66C00C88CD6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AB6400112D45E66C00C88CD6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AB64FFF82D45E66A00C88CD6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -91,6 +169,9 @@
 				AB1D9B952D32FB40003BEC31 /* HealthAnalyst */,
 				AB1D9BA82D32FB41003BEC31 /* HealthAnalystTests */,
 				AB1D9BB22D32FB41003BEC31 /* HealthAnalystUITests */,
+				AB64FFFC2D45E66A00C88CD6 /* NoctiLabs Watch App */,
+				AB64000D2D45E66C00C88CD6 /* NoctiLabs Watch AppTests */,
+				AB6400172D45E66C00C88CD6 /* NoctiLabs Watch AppUITests */,
 				AB1D9B942D32FB40003BEC31 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -101,6 +182,9 @@
 				AB1D9B932D32FB40003BEC31 /* HealthAnalyst.app */,
 				AB1D9BA52D32FB41003BEC31 /* HealthAnalystTests.xctest */,
 				AB1D9BAF2D32FB41003BEC31 /* HealthAnalystUITests.xctest */,
+				AB64FFFB2D45E66A00C88CD6 /* NoctiLabs Watch App.app */,
+				AB64000A2D45E66C00C88CD6 /* NoctiLabs Watch AppTests.xctest */,
+				AB6400142D45E66C00C88CD6 /* NoctiLabs Watch AppUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -115,10 +199,12 @@
 				AB1D9B8F2D32FB40003BEC31 /* Sources */,
 				AB1D9B902D32FB40003BEC31 /* Frameworks */,
 				AB1D9B912D32FB40003BEC31 /* Resources */,
+				AB6400222D45E66C00C88CD6 /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				AB64001D2D45E66C00C88CD6 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				AB1D9B952D32FB40003BEC31 /* HealthAnalyst */,
@@ -176,6 +262,74 @@
 			productReference = AB1D9BAF2D32FB41003BEC31 /* HealthAnalystUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		AB6400092D45E66C00C88CD6 /* NoctiLabs Watch AppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AB6400232D45E66C00C88CD6 /* Build configuration list for PBXNativeTarget "NoctiLabs Watch AppTests" */;
+			buildPhases = (
+				AB6400062D45E66C00C88CD6 /* Sources */,
+				AB6400072D45E66C00C88CD6 /* Frameworks */,
+				AB6400082D45E66C00C88CD6 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AB64000C2D45E66C00C88CD6 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				AB64000D2D45E66C00C88CD6 /* NoctiLabs Watch AppTests */,
+			);
+			name = "NoctiLabs Watch AppTests";
+			packageProductDependencies = (
+			);
+			productName = "NoctiLabs Watch AppTests";
+			productReference = AB64000A2D45E66C00C88CD6 /* NoctiLabs Watch AppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		AB6400132D45E66C00C88CD6 /* NoctiLabs Watch AppUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AB6400262D45E66C00C88CD6 /* Build configuration list for PBXNativeTarget "NoctiLabs Watch AppUITests" */;
+			buildPhases = (
+				AB6400102D45E66C00C88CD6 /* Sources */,
+				AB6400112D45E66C00C88CD6 /* Frameworks */,
+				AB6400122D45E66C00C88CD6 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AB6400162D45E66C00C88CD6 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				AB6400172D45E66C00C88CD6 /* NoctiLabs Watch AppUITests */,
+			);
+			name = "NoctiLabs Watch AppUITests";
+			packageProductDependencies = (
+			);
+			productName = "NoctiLabs Watch AppUITests";
+			productReference = AB6400142D45E66C00C88CD6 /* NoctiLabs Watch AppUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		AB64FFFA2D45E66A00C88CD6 /* NoctiLabs Watch App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AB64001F2D45E66C00C88CD6 /* Build configuration list for PBXNativeTarget "NoctiLabs Watch App" */;
+			buildPhases = (
+				AB64FFF72D45E66A00C88CD6 /* Sources */,
+				AB64FFF82D45E66A00C88CD6 /* Frameworks */,
+				AB64FFF92D45E66A00C88CD6 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				AB64FFFC2D45E66A00C88CD6 /* NoctiLabs Watch App */,
+			);
+			name = "NoctiLabs Watch App";
+			packageProductDependencies = (
+			);
+			productName = "NoctiLabs Watch App";
+			productReference = AB64FFFB2D45E66A00C88CD6 /* NoctiLabs Watch App.app */;
+			productType = "com.apple.product-type.application";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -197,6 +351,17 @@
 						CreatedOnToolsVersion = 16.2;
 						TestTargetID = AB1D9B922D32FB40003BEC31;
 					};
+					AB6400092D45E66C00C88CD6 = {
+						CreatedOnToolsVersion = 16.2;
+						TestTargetID = AB64FFFA2D45E66A00C88CD6;
+					};
+					AB6400132D45E66C00C88CD6 = {
+						CreatedOnToolsVersion = 16.2;
+						TestTargetID = AB64FFFA2D45E66A00C88CD6;
+					};
+					AB64FFFA2D45E66A00C88CD6 = {
+						CreatedOnToolsVersion = 16.2;
+					};
 				};
 			};
 			buildConfigurationList = AB1D9B8E2D32FB40003BEC31 /* Build configuration list for PBXProject "HealthAnalyst" */;
@@ -216,6 +381,9 @@
 				AB1D9B922D32FB40003BEC31 /* HealthAnalyst */,
 				AB1D9BA42D32FB41003BEC31 /* HealthAnalystTests */,
 				AB1D9BAE2D32FB41003BEC31 /* HealthAnalystUITests */,
+				AB64FFFA2D45E66A00C88CD6 /* NoctiLabs Watch App */,
+				AB6400092D45E66C00C88CD6 /* NoctiLabs Watch AppTests */,
+				AB6400132D45E66C00C88CD6 /* NoctiLabs Watch AppUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -236,6 +404,27 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		AB1D9BAD2D32FB41003BEC31 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AB6400082D45E66C00C88CD6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AB6400122D45E66C00C88CD6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AB64FFF92D45E66A00C88CD6 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -266,6 +455,27 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AB6400062D45E66C00C88CD6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AB6400102D45E66C00C88CD6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AB64FFF72D45E66A00C88CD6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -278,6 +488,21 @@
 			isa = PBXTargetDependency;
 			target = AB1D9B922D32FB40003BEC31 /* HealthAnalyst */;
 			targetProxy = AB1D9BB02D32FB41003BEC31 /* PBXContainerItemProxy */;
+		};
+		AB64000C2D45E66C00C88CD6 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AB64FFFA2D45E66A00C88CD6 /* NoctiLabs Watch App */;
+			targetProxy = AB64000B2D45E66C00C88CD6 /* PBXContainerItemProxy */;
+		};
+		AB6400162D45E66C00C88CD6 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AB64FFFA2D45E66A00C88CD6 /* NoctiLabs Watch App */;
+			targetProxy = AB6400152D45E66C00C88CD6 /* PBXContainerItemProxy */;
+		};
+		AB64001D2D45E66C00C88CD6 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AB64FFFA2D45E66A00C88CD6 /* NoctiLabs Watch App */;
+			targetProxy = AB64001C2D45E66C00C88CD6 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -539,6 +764,144 @@
 			};
 			name = Release;
 		};
+		AB6400202D45E66C00C88CD6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"NoctiLabs Watch App/Preview Content\"";
+				DEVELOPMENT_TEAM = 6QRVB25HW9;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = NoctiLabs;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = JCM.HealthAnalyst;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = JCM.HealthAnalyst.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 11.2;
+			};
+			name = Debug;
+		};
+		AB6400212D45E66C00C88CD6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"NoctiLabs Watch App/Preview Content\"";
+				DEVELOPMENT_TEAM = 6QRVB25HW9;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = NoctiLabs;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = JCM.HealthAnalyst;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = JCM.HealthAnalyst.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 11.2;
+			};
+			name = Release;
+		};
+		AB6400242D45E66C00C88CD6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6QRVB25HW9;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "JCM.NoctiLabs-Watch-AppTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NoctiLabs Watch App.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/NoctiLabs Watch App";
+				WATCHOS_DEPLOYMENT_TARGET = 11.2;
+			};
+			name = Debug;
+		};
+		AB6400252D45E66C00C88CD6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6QRVB25HW9;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "JCM.NoctiLabs-Watch-AppTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NoctiLabs Watch App.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/NoctiLabs Watch App";
+				WATCHOS_DEPLOYMENT_TARGET = 11.2;
+			};
+			name = Release;
+		};
+		AB6400272D45E66C00C88CD6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6QRVB25HW9;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "JCM.NoctiLabs-Watch-AppUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_TARGET_NAME = "NoctiLabs Watch App";
+				WATCHOS_DEPLOYMENT_TARGET = 11.2;
+			};
+			name = Debug;
+		};
+		AB6400282D45E66C00C88CD6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6QRVB25HW9;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "JCM.NoctiLabs-Watch-AppUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_TARGET_NAME = "NoctiLabs Watch App";
+				WATCHOS_DEPLOYMENT_TARGET = 11.2;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -574,6 +937,33 @@
 			buildConfigurations = (
 				AB1D9BC02D32FB41003BEC31 /* Debug */,
 				AB1D9BC12D32FB41003BEC31 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AB64001F2D45E66C00C88CD6 /* Build configuration list for PBXNativeTarget "NoctiLabs Watch App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AB6400202D45E66C00C88CD6 /* Debug */,
+				AB6400212D45E66C00C88CD6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AB6400232D45E66C00C88CD6 /* Build configuration list for PBXNativeTarget "NoctiLabs Watch AppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AB6400242D45E66C00C88CD6 /* Debug */,
+				AB6400252D45E66C00C88CD6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AB6400262D45E66C00C88CD6 /* Build configuration list for PBXNativeTarget "NoctiLabs Watch AppUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AB6400272D45E66C00C88CD6 /* Debug */,
+				AB6400282D45E66C00C88CD6 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
