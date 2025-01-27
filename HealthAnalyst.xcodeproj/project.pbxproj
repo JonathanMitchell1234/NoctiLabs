@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		AB64001E2D45E66C00C88CD6 /* NoctiLabs Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = AB64FFFB2D45E66A00C88CD6 /* NoctiLabs Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		AB6401092D47093300C88CD6 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB6401082D47093300C88CD6 /* HealthKit.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -68,6 +69,7 @@
 		AB1D9BAF2D32FB41003BEC31 /* HealthAnalystUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HealthAnalystUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB64000A2D45E66C00C88CD6 /* NoctiLabs Watch AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "NoctiLabs Watch AppTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB6400142D45E66C00C88CD6 /* NoctiLabs Watch AppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "NoctiLabs Watch AppUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		AB6401082D47093300C88CD6 /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = Platforms/WatchOS.platform/Developer/SDKs/WatchOS11.2.sdk/System/Library/Frameworks/HealthKit.framework; sourceTree = DEVELOPER_DIR; };
 		AB64FFFB2D45E66A00C88CD6 /* NoctiLabs Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "NoctiLabs Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -157,6 +159,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AB6401092D47093300C88CD6 /* HealthKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -172,6 +175,7 @@
 				AB64FFFC2D45E66A00C88CD6 /* NoctiLabs Watch App */,
 				AB64000D2D45E66C00C88CD6 /* NoctiLabs Watch AppTests */,
 				AB6400172D45E66C00C88CD6 /* NoctiLabs Watch AppUITests */,
+				AB6401072D47093300C88CD6 /* Frameworks */,
 				AB1D9B942D32FB40003BEC31 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -187,6 +191,14 @@
 				AB6400142D45E66C00C88CD6 /* NoctiLabs Watch AppUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		AB6401072D47093300C88CD6 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				AB6401082D47093300C88CD6 /* HealthKit.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -775,7 +787,9 @@
 				DEVELOPMENT_TEAM = 6QRVB25HW9;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "NoctiLabs-Watch-App-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = NoctiLabs;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "We need access to your health data";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = JCM.HealthAnalyst;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -790,7 +804,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
-				WATCHOS_DEPLOYMENT_TARGET = 11.2;
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
 			};
 			name = Debug;
 		};
@@ -799,13 +813,16 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "NoctiLabs Watch App/NoctiLabs Watch AppRelease.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"NoctiLabs Watch App/Preview Content\"";
 				DEVELOPMENT_TEAM = 6QRVB25HW9;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "NoctiLabs-Watch-App-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = NoctiLabs;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "We need access to your health data";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = JCM.HealthAnalyst;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -820,7 +837,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
-				WATCHOS_DEPLOYMENT_TARGET = 11.2;
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
 			};
 			name = Release;
 		};
