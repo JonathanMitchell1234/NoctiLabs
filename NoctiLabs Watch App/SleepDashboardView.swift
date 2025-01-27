@@ -48,7 +48,8 @@ struct SleepDashboardView: View {
     @State private var sleepRegularity: String = "N/A"
     @State private var socialJetLag: String = "N/A"
     
-    let columns = [GridItem(.adaptive(minimum: 80))]
+    // CHANGED: Single column for full width items
+    let columns = [GridItem(.flexible())]
 
     init() {
             let healthStore = HKHealthStore.isHealthDataAvailable() ? HKHealthStore() : nil
@@ -64,6 +65,7 @@ struct SleepDashboardView: View {
                     }
                     .padding(.bottom, 8)
                     
+                    // CHANGED: Using single column layout
                     LazyVGrid(columns: columns, spacing: 8) {
                         StatView(
                             title: "Deep Sleep",
@@ -354,6 +356,8 @@ struct SleepDashboardView: View {
                 }
                 .padding(8)
                 .frame(maxWidth: .infinity)
+                // ADDED: Fixed height for vertical stacking
+                .frame(height: 80)
                 .background(Color.gray.opacity(0.2))
                 .cornerRadius(8)
             }
