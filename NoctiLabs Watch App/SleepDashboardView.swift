@@ -318,7 +318,39 @@ struct SleepDashboardView: View {
                 description: "Variability",
                 icon: "heart.text.square.fill",
                 color: .teal
-            )
+            ),
+            StatViewData(
+                            title: "Resp Rate",
+                            value: averageRespiratoryRate,
+                            percentage: nil,
+                            description: "Breaths/Min",
+                            icon: "wind",
+                            color: .cyan
+                        ),
+                        StatViewData(
+                            title: "Blood O2",
+                            value: averageSleepingBloodOxygen,
+                            percentage: nil,
+                            description: "Oxygen",
+                            icon: "lungs.fill",
+                            color: .red
+                        ),
+                        StatViewData(
+                            title: "Sleep Debt",
+                            value: sleepDebt,
+                            percentage: nil,
+                            description: "Last 7 Days",
+                            icon: "exclamationmark.triangle.fill",
+                            color: .yellow
+                        ),
+                        StatViewData(
+                            title: "Resting HR",
+                            value: restingHeartRate,
+                            percentage: nil,
+                            description: "During Sleep",
+                            icon: "heart.fill",
+                            color: .pink
+                        )
         ]
     }
 }
@@ -350,9 +382,7 @@ extension SleepDashboardView {
                         .font(.system(size: 16, weight: .bold, design: .rounded))
                         .foregroundColor(value == "N/A" ? .gray : .primary)
                 }
-                
                 Spacer()
-                
                 VStack(alignment: .trailing, spacing: 2) {
                     if let percentage = percentage {
                         Text(percentage)
@@ -368,20 +398,13 @@ extension SleepDashboardView {
             }
             .padding(10)
             .frame(maxWidth: .infinity)
+            .frame(height: 80)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(.regularMaterial)
+                    .fill(Color.gray.opacity(0.2))
             )
             .compositingGroup()
             .shadow(color: Color.black.opacity(0.1), radius: 3, x: 0, y: 2)
         }
     }
 }
-
-//// MARK: - Preview
-//struct SleepDashboardView_Previews: PreviewProvider {
-//    static var previews: some View {
-//        SleepDashboardView()
-//            .previewDevice("Apple Watch Series 9 (45mm)")
-//    }
-//}
