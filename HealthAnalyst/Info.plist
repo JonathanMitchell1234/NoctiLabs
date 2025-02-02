@@ -10,7 +10,6 @@
 	<array>
 		<string>audio</string>
 		<string>remote-notification</string>
-		<string></string>
 	</array>
 </dict>
 </plist>

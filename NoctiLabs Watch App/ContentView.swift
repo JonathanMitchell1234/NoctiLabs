@@ -9,8 +9,18 @@ import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        SleepDashboardView()
-        
+        TabView {
+            SleepDashboardView()
+                .tabItem {
+                    Label("Sleep", systemImage: "bed.double.fill")
+                }
+            
+            ActivityDashboardView()
+                .tabItem {
+                    Label("Activity", systemImage: "figure.walk")
+                }
+        }
+        .tabViewStyle(PageTabViewStyle()) // Enables horizontal swiping
     }
 }
 
